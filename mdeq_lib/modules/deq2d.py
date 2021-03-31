@@ -17,8 +17,7 @@ from scipy.optimize import root
 import time
 from termcolor import colored
 import copy
-sys.path.append("../")
-from modules.broyden import broyden, analyze_broyden
+from mdeq_lib.modules.broyden import broyden, analyze_broyden
 from tqdm import tqdm
 
 import logging
@@ -74,7 +73,7 @@ class DEQFunc2d(Function):
         lowest_step = result_info['lowest_step']
         diff = result_info['diff']
         r_diff = min(result_info['new_trace'][1:])
-        
+
         if z1_est.get_device() == 0:
             if writer is not None:
                 writer.add_scalar('forward/diff', result_info['diff'], train_step)
@@ -86,7 +85,7 @@ class DEQFunc2d(Function):
         if status:
             err = {"z1": z1}
             analyze_broyden(result_info, err=err, judge=False, name="forward", save_err=False)
-        
+
         if threshold > 30:
             torch.cuda.empty_cache()
         return DEQFunc2d.vec2list(z1_est.clone().detach(), cutoffs)
@@ -108,7 +107,7 @@ class DEQFunc2d(Function):
         grad_args = [None for _ in range(ctx.args_len)]
         return (None, grad_z1, None, *grad_args)
 
-    
+
 class DEQModule2d(nn.Module):
     def __init__(self, func, func_copy):
         super(DEQModule2d, self).__init__()
@@ -119,7 +118,7 @@ class DEQModule2d(nn.Module):
         raise NotImplemented
 
     class Backward(Function):
-        
+
         @staticmethod
         def forward(ctx, func_copy, z1, u, *args):
             ctx.save_for_backward(z1)
@@ -144,7 +143,7 @@ class DEQModule2d(nn.Module):
             z1_temp = z1.clone().detach().requires_grad_()
             u_temp = [elem.clone().detach() for elem in u]
             args_temp = args[:-1]
-            
+
             with torch.enable_grad():
                 y = DEQFunc2d.g(func, z1_temp, u_temp, cutoffs, *args_temp)
 
@@ -161,7 +160,7 @@ class DEQModule2d(nn.Module):
             dl_df_est = result_info['result']
             nstep = result_info['nstep']
             lowest_step = result_info['lowest_step']
-            
+
             if dl_df_est.get_device() == 0:
                 if writer is not None:
                     writer.add_scalar('backward/diff', result_info['diff'], train_step)
