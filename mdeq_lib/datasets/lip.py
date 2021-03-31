@@ -12,23 +12,23 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
-from .base_dataset import BaseDataset
- 
+from mdeq_lib.datasets.base_dataset import BaseDataset
+
 class LIP(BaseDataset):
-    def __init__(self, 
-                 root, 
-                 list_path, 
-                 num_samples=None, 
+    def __init__(self,
+                 root,
+                 list_path,
+                 num_samples=None,
                  num_classes=20,
-                 multi_scale=True, 
-                 flip=True, 
-                 ignore_label=-1, 
-                 base_size=473, 
-                 crop_size=(473, 473), 
+                 multi_scale=True,
+                 flip=True,
+                 ignore_label=-1,
+                 base_size=473,
+                 crop_size=(473, 473),
                  downsample_rate=1,
                  scale_factor=11,
                  center_crop_test=False,
-                 mean=[0.485, 0.456, 0.406], 
+                 mean=[0.485, 0.456, 0.406],
                  std=[0.229, 0.224, 0.225]):
 
         super(LIP, self).__init__(ignore_label, base_size,
@@ -46,7 +46,7 @@ class LIP(BaseDataset):
         self.files = self.read_files()
         if num_samples:
             self.files = self.files[:num_samples]
-    
+
     def read_files(self):
         files = []
         for item in self.img_list:
@@ -58,26 +58,26 @@ class LIP(BaseDataset):
             files.append(sample)
         return files
 
-    def resize_image(self, image, label, size): 
-        image = cv2.resize(image, size, interpolation = cv2.INTER_LINEAR) 
+    def resize_image(self, image, label, size):
+        image = cv2.resize(image, size, interpolation = cv2.INTER_LINEAR)
         label = cv2.resize(label, size, interpolation=cv2.INTER_NEAREST)
         return image, label
-     
+
     def __getitem__(self, index):
         item = self.files[index]
         name = item["name"]
-         
+
         image = cv2.imread(os.path.join(
-                    self.root, 'lip/TrainVal_images/', item["img"]), 
+                    self.root, 'lip/TrainVal_images/', item["img"]),
                     cv2.IMREAD_COLOR)
         label = cv2.imread(os.path.join(
-                    self.root, 'lip/TrainVal_parsing_annotations/', 
+                    self.root, 'lip/TrainVal_parsing_annotations/',
                     item["label"]),
                     cv2.IMREAD_GRAYSCALE)
         size = label.shape
 
         if 'testval' in self.list_path:
-            image = cv2.resize(image, self.crop_size, 
+            image = cv2.resize(image, self.crop_size,
                                interpolation = cv2.INTER_LINEAR)
             image = self.input_transform(image)
             image = image.transpose((2, 0, 1))
@@ -86,7 +86,7 @@ class LIP(BaseDataset):
 
         if self.flip:
             flip = np.random.choice(2) * 2 - 1
-            image = image[:, ::flip, :] 
+            image = image[:, ::flip, :]
             label = label[:, ::flip]
 
             if flip == -1:
@@ -97,9 +97,9 @@ class LIP(BaseDataset):
                     left_pos = np.where(label == left_idx[i])
                     label[right_pos[0], right_pos[1]] = left_idx[i]
                     label[left_pos[0], left_pos[1]] = right_idx[i]
-        
+
         image, label = self.resize_image(image, label, self.crop_size)
-        image, label = self.gen_sample(image, label, 
+        image, label = self.gen_sample(image, label,
                                 self.multi_scale, False)
 
         return image.copy(), label.copy(), np.array(size), name
@@ -107,14 +107,14 @@ class LIP(BaseDataset):
     def inference(self, model, image, flip):
         size = image.size()
         pred = model(image)
-        pred = F.upsample(input=pred, 
-                          size=(size[-2], size[-1]), 
-                          mode='bilinear')        
+        pred = F.upsample(input=pred,
+                          size=(size[-2], size[-1]),
+                          mode='bilinear')
         if flip:
             flip_img = image.numpy()[:,:,:,::-1]
             flip_output = model(torch.from_numpy(flip_img.copy()))
-            flip_output = F.upsample(input=flip_output, 
-                            size=(size[-2], size[-1]), 
+            flip_output = F.upsample(input=flip_output,
+                            size=(size[-2], size[-1]),
                             mode='bilinear')
             flip_output = flip_output.cpu().numpy()
             flip_pred = flip_output.copy()
@@ -128,4 +128,3 @@ class LIP(BaseDataset):
             pred += flip_pred
             pred = pred * 0.5
         return pred.exp()
-    

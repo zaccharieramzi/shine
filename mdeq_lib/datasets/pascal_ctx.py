@@ -2,7 +2,7 @@
 # Copyright (c) Microsoft
 # Licensed under the MIT License.
 # Written by Ke Sun (sunk@mail.ustc.edu.cn)
-# Referring to the implementation in 
+# Referring to the implementation in
 # https://github.com/zhanghang1989/PyTorch-Encoding
 # ------------------------------------------------------------------------------
 
@@ -14,28 +14,28 @@ from PIL import Image
 
 import torch
 
-from .base_dataset import BaseDataset
+from mdeq_lib.datasets.base_dataset import BaseDataset
 
 class PASCALContext(BaseDataset):
-    def __init__(self, 
-                 root, 
-                 list_path, 
-                 num_samples=None, 
+    def __init__(self,
+                 root,
+                 list_path,
+                 num_samples=None,
                  num_classes=59,
-                 multi_scale=True, 
-                 flip=True, 
-                 ignore_label=-1, 
-                 base_size=520, 
-                 crop_size=(480, 480), 
+                 multi_scale=True,
+                 flip=True,
+                 ignore_label=-1,
+                 base_size=520,
+                 crop_size=(480, 480),
                  downsample_rate=1,
                  scale_factor=16,
                  center_crop_test=False,
-                 mean=[0.485, 0.456, 0.406], 
+                 mean=[0.485, 0.456, 0.406],
                  std=[0.229, 0.224, 0.225],):
-    
+
         super(PASCALContext, self).__init__(ignore_label, base_size,
                 crop_size, downsample_rate, scale_factor, mean, std)
-        
+
         self.root = os.path.join(root, 'pascal_ctx/VOCdevkit/VOC2010')
         self.split = list_path
 
@@ -63,10 +63,10 @@ class PASCALContext(BaseDataset):
 
         # generate masks
         self._mapping = np.sort(np.array([
-            0, 2, 259, 260, 415, 324, 9, 258, 144, 18, 19, 22, 
-            23, 397, 25, 284, 158, 159, 416, 33, 162, 420, 454, 295, 296, 
-            427, 44, 45, 46, 308, 59, 440, 445, 31, 232, 65, 354, 424, 
-            68, 326, 72, 458, 34, 207, 80, 355, 85, 347, 220, 349, 360, 
+            0, 2, 259, 260, 415, 324, 9, 258, 144, 18, 19, 22,
+            23, 397, 25, 284, 158, 159, 416, 33, 162, 420, 454, 295, 296,
+            427, 44, 45, 46, 308, 59, 440, 445, 31, 232, 65, 354, 424,
+            68, 326, 72, 458, 34, 207, 80, 355, 85, 347, 220, 349, 360,
             98, 187, 104, 105, 366, 189, 368, 113, 115]))
 
         print('mask_file:', mask_file)
@@ -106,12 +106,12 @@ class PASCALContext(BaseDataset):
         size = image.shape
 
         if self.split == 'val':
-            image = cv2.resize(image, self.crop_size, 
+            image = cv2.resize(image, self.crop_size,
                                interpolation = cv2.INTER_LINEAR)
             image = self.input_transform(image)
             image = image.transpose((2, 0, 1))
 
-            label = cv2.resize(label, self.crop_size, 
+            label = cv2.resize(label, self.crop_size,
                                interpolation=cv2.INTER_NEAREST)
             label = self.label_transform(label)
         elif self.split == 'testval':
@@ -120,9 +120,9 @@ class PASCALContext(BaseDataset):
             image = image.transpose((2, 0, 1))
             label = self.label_transform(label)
         else:
-            image, label = self.gen_sample(image, label, 
+            image, label = self.gen_sample(image, label,
                                 self.multi_scale, self.flip)
-                                
+
         return image.copy(), label.copy(), np.array(size), name
 
     def label_transform(self, label):
