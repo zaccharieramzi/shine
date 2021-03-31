@@ -7,8 +7,8 @@ from torch.autograd import Function
 import numpy as np
 
 import sys
-sys.path.append("../../")
-from modules.deq2d import *
+
+from mdeq_lib.modules.deq2d import *
 
 __author__ = "shaojieb"
 
@@ -16,7 +16,7 @@ __author__ = "shaojieb"
 class MDEQWrapper(DEQModule2d):
     def __init__(self, func, func_copy):
         super(MDEQWrapper, self).__init__(func, func_copy)
-    
+
     def forward(self, z1, u, **kwargs):
         train_step = kwargs.get('train_step', -1)
         threshold = kwargs.get('threshold', 30)
@@ -32,4 +32,3 @@ class MDEQWrapper(DEQModule2d):
             new_z1 = self.Backward.apply(self.func_copy, new_z1, u, threshold, train_step, writer)
             new_z1 = DEQFunc2d.vec2list(new_z1, cutoffs)
         return new_z1
-
