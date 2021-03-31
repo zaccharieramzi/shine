@@ -1,0 +1,9 @@
+torch
+torchvision
+yacs
+termcolor
+opencv-python
+tensorboard
+Pillow
+matplotlib
+scipy
