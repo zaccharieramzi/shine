@@ -22,7 +22,6 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 
-import _init_paths
 import mdeq_lib.models as models
 from mdeq_lib.config import config
 from mdeq_lib.config import update_config
