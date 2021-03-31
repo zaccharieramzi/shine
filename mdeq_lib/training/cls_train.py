@@ -46,7 +46,7 @@ CONFIG_DIR = Path('../experiments')
 
 def train_classifier(n_epochs=100):
     args = Args(
-        cfg=str(CONFIG_DIR / 'imagenet' / 'denoise_mdeq_SMALL.yaml'),
+        cfg=str(CONFIG_DIR / 'imagenet' / 'cls_mdeq_SMALL.yaml'),
         logDir=str(LOGS_DIR) + '/',
         modelDir=str(CHECKPOINTS_DIR) + '/',
         dataDir=str(DATA_DIR) + '/',
