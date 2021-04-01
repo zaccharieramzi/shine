@@ -141,6 +141,9 @@ class DEQModule2d(nn.Module):
             threshold, train_step, writer, forward_result_info, shine = args[-5:]
 
             if shine:
+                # TODO: take into account nstep to form partial us and vts
+                # TODO: allow to use Us and VTs as initialization for the backward
+                # TODO: verify the sign of this
                 dl_df_est = rmatvec(forward_result_info['Us'], forward_result_info['VTs'], grad)
             else:
                 func = ctx.func
