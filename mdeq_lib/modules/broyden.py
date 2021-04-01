@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import torch.nn.functional as functional
 from torch.autograd import Function
-import numpy as np 
+import numpy as np
 import pickle
 import sys
 import os
@@ -83,7 +83,7 @@ def line_search(update, x0, g0, g, nstep=0, on=True):
             tmp_g0[0] = g0_new
             tmp_phi[0] = phi_new
         return phi_new
-    
+
     if on:
         s, phi1, ite = scalar_search_armijo(phi, tmp_phi[0], -tmp_phi[0], amin=1e-2)
     if (not on) or s is None:
@@ -122,13 +122,13 @@ def matvec(part_Us, part_VTs, x):
 def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     bsz, total_hsize, n_elem = x0.size()
     dev = x0.device
-    
+
     x_est = x0           # (bsz, 2d, L')
     gx = g(x_est)        # (bsz, 2d, L')
     nstep = 0
     tnstep = 0
     LBFGS_thres = min(threshold, 27)
-    
+
     # For fast calculation of inv_jacobian (approximately)
     Us = torch.zeros(bsz, total_hsize, n_elem, LBFGS_thres).to(dev)
     VTs = torch.zeros(bsz, LBFGS_thres, total_hsize, n_elem).to(dev)
@@ -137,12 +137,12 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     prot_break = False
     trace = [init_objective]
     new_trace = [-1]
-    
+
     # To be used in protective breaks
     protect_thres = 1e6 * n_elem
     lowest = new_objective
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
-    
+
     while new_objective >= eps and nstep < threshold:
         x_est, gx, delta_x, delta_gx, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls)
         nstep += 1
@@ -175,7 +175,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
         VTs[:,(nstep-1) % LBFGS_thres] = vT
         Us[:,:,:,(nstep-1) % LBFGS_thres] = u
         update = -matvec(Us[:,:,:,:nstep], VTs[:,:nstep], gx)
-        
+
     Us, VTs = None, None
     return {"result": lowest_xest,
             "nstep": nstep,
@@ -187,7 +187,9 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
             "trace": trace,
             "new_trace": new_trace,
             "eps": eps,
-            "threshold": threshold}
+            "threshold": threshold,
+            "Us": Us,
+            "VTs": VTs}
 
 
 def analyze_broyden(res_info, err=None, judge=True, name='forward', training=True, save_err=True):
@@ -204,30 +206,30 @@ def analyze_broyden(res_info, err=None, judge=True, name='forward', training=Tru
     threshold = res_info['threshold']
     if judge:
         return nstep >= threshold or (nstep == 0 and (diff != diff or diff > eps)) or prot_break or torch.isnan(res_est).any()
-    
+
     assert (err is not None), "Must provide err information when not in judgment mode"
     prefix, color = ('', 'red') if name == 'forward' else ('back_', 'blue')
     eval_prefix = '' if training else 'eval_'
-    
+
     # Case 1: A nan entry is produced in Broyden
     if torch.isnan(res_est).any():
         msg = colored(f"WARNING: nan found in Broyden's {name} result. Diff: {diff}", color)
         print(msg)
         if save_err: pickle.dump(err, open(f'{prefix}{eval_prefix}nan.pkl', 'wb'))
         return (1, msg, res_info)
-        
+
     # Case 2: Unknown problem with Broyden's method (probably due to nan update(s) to the weights)
     if nstep == 0 and (diff != diff or diff > eps):
         msg = colored(f"WARNING: Bad Broyden's method {name}. Why?? Diff: {diff}. STOP.", color)
         print(msg)
         if save_err: pickle.dump(err, open(f'{prefix}{eval_prefix}badbroyden.pkl', 'wb'))
         return (2, msg, res_info)
-        
+
     # Case 3: Protective break during Broyden (so that it does not diverge to infinity)
     if prot_break and np.random.uniform(0,1) < 0.05:
         msg = colored(f"WARNING: Hit Protective Break in {name}. Diff: {diff}. Total Iter: {len(trace)}", color)
         print(msg)
         if save_err: pickle.dump(err, open(f'{prefix}{eval_prefix}prot_break.pkl', 'wb'))
         return (3, msg, res_info)
-        
+
     return (-1, '', res_info)

@@ -17,7 +17,7 @@ from scipy.optimize import root
 import time
 from termcolor import colored
 import copy
-from mdeq_lib.modules.broyden import broyden, analyze_broyden
+from mdeq_lib.modules.broyden import broyden, analyze_broyden, rmatvec
 from tqdm import tqdm
 
 import logging
@@ -88,7 +88,7 @@ class DEQFunc2d(Function):
 
         if threshold > 30:
             torch.cuda.empty_cache()
-        return DEQFunc2d.vec2list(z1_est.clone().detach(), cutoffs)
+        return DEQFunc2d.vec2list(z1_est.clone().detach(), cutoffs), result_info
 
     @staticmethod
     def forward(ctx, func, z1, u, *args):
@@ -109,10 +109,11 @@ class DEQFunc2d(Function):
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy):
+    def __init__(self, func, func_copy, shine=False):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
+        self.shine = shine
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -137,46 +138,49 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer = args[-3:]
+            threshold, train_step, writer, forward_result_info, shine = args[-5:]
 
-            func = ctx.func
-            z1_temp = z1.clone().detach().requires_grad_()
-            u_temp = [elem.clone().detach() for elem in u]
-            args_temp = args[:-1]
+            if shine:
+                dl_df_est = rmatvec(forward_result_info['Us'], forward_result_info['VTs'], grad)
+            else:
+                func = ctx.func
+                z1_temp = z1.clone().detach().requires_grad_()
+                u_temp = [elem.clone().detach() for elem in u]
+                args_temp = args[:-1]
 
-            with torch.enable_grad():
-                y = DEQFunc2d.g(func, z1_temp, u_temp, cutoffs, *args_temp)
+                with torch.enable_grad():
+                    y = DEQFunc2d.g(func, z1_temp, u_temp, cutoffs, *args_temp)
 
-            def g(x):
-                y.backward(x, retain_graph=True)  # Retain for future calls to g
-                res = z1_temp.grad + grad
-                z1_temp.grad.zero_()
-                return res
+                def g(x):
+                    y.backward(x, retain_graph=True)  # Retain for future calls to g
+                    res = z1_temp.grad + grad
+                    z1_temp.grad.zero_()
+                    return res
 
-            eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
-            dl_df_est = torch.zeros_like(grad)
+                eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
+                dl_df_est = torch.zeros_like(grad)
 
-            result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
-            dl_df_est = result_info['result']
-            nstep = result_info['nstep']
-            lowest_step = result_info['lowest_step']
+                result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
+                dl_df_est = result_info['result']
+                nstep = result_info['nstep']
+                lowest_step = result_info['lowest_step']
 
-            if dl_df_est.get_device() == 0:
-                if writer is not None:
-                    writer.add_scalar('backward/diff', result_info['diff'], train_step)
-                    writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
-                    writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
-                    writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
+                if dl_df_est.get_device() == 0:
+                    if writer is not None:
+                        writer.add_scalar('backward/diff', result_info['diff'], train_step)
+                        writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
+                        writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
+                        writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
 
-            status = analyze_broyden(result_info, judge=True)
-            if status:
-                err = {"z1": z1}
-                analyze_broyden(result_info, err=err, judge=False, name="backward", save_err=False)
+                status = analyze_broyden(result_info, judge=True)
+                if status:
+                    err = {"z1": z1}
+                    analyze_broyden(result_info, err=err, judge=False, name="backward", save_err=False)
 
-            if threshold > 30:
-                torch.cuda.empty_cache()
+                if threshold > 30:
+                    torch.cuda.empty_cache()
 
-            y.backward(torch.zeros_like(dl_df_est), retain_graph=False)
+                y.backward(torch.zeros_like(dl_df_est), retain_graph=False)
 
             grad_args = [None for _ in range(len(args))]
             return (None, dl_df_est, None, *grad_args)
