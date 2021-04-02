@@ -176,7 +176,8 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
         Us[:,:,:,(nstep-1) % LBFGS_thres] = u
         update = -matvec(Us[:,:,:,:nstep], VTs[:,:nstep], gx)
 
-    Us, VTs = None, None
+    # NOTE: why was this present originally? is it a question of memory?
+    # Us, VTs = None, None
     return {"result": lowest_xest,
             "nstep": nstep,
             "tnstep": tnstep,
