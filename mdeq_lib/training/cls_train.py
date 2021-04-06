@@ -48,7 +48,7 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet'):
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
     if dataset:
         data_dir = IMAGENET_DIR
     else:
@@ -60,11 +60,11 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     ]
     if pretrained:
         opts += [
-            'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / 'MDEQ_Small_Cls.pkl'),
+            'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / f'MDEQ_{model_size}_Cls.pkl'),
             'TRAIN.PRETRAIN_STEPS', 0,
         ]
     args = Args(
-        cfg=str(CONFIG_DIR / dataset / 'cls_mdeq_SMALL.yaml'),
+        cfg=str(CONFIG_DIR / dataset / f'cls_mdeq_{model_size}.yaml'),
         logDir=str(LOGS_DIR) + '/',
         modelDir=str(CHECKPOINTS_DIR) + '/',
         dataDir=str(data_dir) + '/',
