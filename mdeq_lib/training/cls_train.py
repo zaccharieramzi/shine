@@ -47,10 +47,10 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False):
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
     opts = [
         'DATASET.ROOT', str(IMAGENET_DIR) + '/',
-        'GPUS', [0],
+        'GPUS', list(range(n_gpus)),
         'TRAIN.END_EPOCH', n_epochs,
     ]
     if pretrained:
