@@ -25,7 +25,8 @@ class MDEQWrapper(DEQModule2d):
         if u is None:
             raise ValueError("Input injection is required.")
 
-        new_z1, result_info = list(DEQFunc2d.apply(self.func, z1, u, threshold, train_step, writer))
+        new_z1, result_info = DEQFunc2d.apply(self.func, z1, u, threshold, train_step, writer)
+        new_z1 = list(new_z1)
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in new_z1]
         if self.training:
             new_z1 = DEQFunc2d.list2vec(DEQFunc2d.f(self.func, new_z1, u, threshold, train_step))
