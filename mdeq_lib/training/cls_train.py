@@ -49,7 +49,7 @@ Args = namedtuple(
 )
 
 def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
-    if dataset:
+    if dataset == 'imagenet':
         data_dir = IMAGENET_DIR
     else:
         data_dir = CIFAR_DIR
