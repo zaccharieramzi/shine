@@ -97,13 +97,16 @@ class DEQFunc2d(Function):
         ctx.args_len = len(args)
         with torch.no_grad():
             z1_est, result_info = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args)  # args include pos_emb, threshold, train_step
-
+            Us = result_info['Us']
+            VTs = result_info['VTs']
+            nstep = result_info['nstep']
+            qN_tensors = (Us, VTs, nstep)
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.
-            return tuple(z1_est), result_info
+            return tuple(z1_est), qN_tensors
 
     @staticmethod
-    def backward(ctx, grad_z1, _grad_result_info):
+    def backward(ctx, grad_z1, _grad_qN_tensors):
         grad_args = [None for _ in range(ctx.args_len)]
         return (None, grad_z1, None, *grad_args)
 
@@ -138,14 +141,12 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, forward_result_info, shine = args[-5:]
-
+            threshold, train_step, writer, qN_tensors, shine = args[-5:]
+            Us, VTs, nstep = qN_tensors
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
                 # TODO: verify the sign of this
-                Us = forward_result_info['Us']
-                VTs = forward_result_info['VTs']
-                nstep = forward_result_info['nstep']
+
                 dl_df_est = rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
             else:
                 func = ctx.func
