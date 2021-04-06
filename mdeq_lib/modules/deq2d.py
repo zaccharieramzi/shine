@@ -96,14 +96,14 @@ class DEQFunc2d(Function):
         eps = 1e-5 * np.sqrt(nelem)
         ctx.args_len = len(args)
         with torch.no_grad():
-            z1_est = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args)  # args include pos_emb, threshold, train_step
+            z1_est, result_info = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args)  # args include pos_emb, threshold, train_step
 
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.
-            return tuple(z1_est)
+            return tuple(z1_est), result_info
 
     @staticmethod
-    def backward(ctx, grad_z1):
+    def backward(ctx, grad_z1, _grad_result_info):
         grad_args = [None for _ in range(ctx.args_len)]
         return (None, grad_z1, None, *grad_args)
 
