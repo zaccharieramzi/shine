@@ -148,9 +148,8 @@ class DEQModule2d(nn.Module):
             Us, VTs, nstep = qN_tensors
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
-                # TODO: verify the sign of this
 
-                dl_df_est = rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+                dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
             else:
                 # here func is the mdeq module, that is the function defining the fixed point
                 func = ctx.func
