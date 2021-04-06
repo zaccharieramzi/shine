@@ -103,7 +103,7 @@ class DEQFunc2d(Function):
             qN_tensors = (Us, VTs, nstep)
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.
-            return tuple(z1_est), qN_tensors
+            return tuple(z1_est) + qN_tensors
 
     @staticmethod
     def backward(ctx, grad_z1, _grad_qN_tensors):
