@@ -25,6 +25,13 @@ from torch.utils.tensorboard import SummaryWriter
 import mdeq_lib.models as models
 from mdeq_lib.config import config
 from mdeq_lib.config import update_config
+from mdeq_lib.config.env_config import (
+    LOGS_DIR,
+    CHECKPOINTS_DIR,
+    DATA_DIR,
+    CONFIG_DIR,
+    IMAGENET_DIR,
+)
 from mdeq_lib.core.cls_function import train, validate
 from mdeq_lib.utils.modelsummary import get_model_summary
 from mdeq_lib.utils.utils import get_optimizer
@@ -38,11 +45,6 @@ Args = namedtuple(
     'Args',
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
-
-LOGS_DIR = Path('./logs')
-CHECKPOINTS_DIR = Path('../new_models')
-DATA_DIR = Path('../data')
-CONFIG_DIR = Path('../experiments')
 
 def train_classifier(n_epochs=100):
     args = Args(
