@@ -31,6 +31,7 @@ from mdeq_lib.config.env_config import (
     DATA_DIR,
     CONFIG_DIR,
     IMAGENET_DIR,
+    WORK_DIR,
 )
 from mdeq_lib.core.cls_function import train, validate
 from mdeq_lib.utils.modelsummary import get_model_summary
@@ -46,7 +47,17 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100):
+def train_classifier(n_epochs=100, pretrained=False):
+    opts = [
+        'DATASET.ROOT', str(IMAGENET_DIR) + '/',
+        'GPUS', [0],
+        'TRAIN.END_EPOCH', n_epochs,
+    ]
+    if pretrained:
+        opts += [
+            'MODEL.PRETRAINED', WORK_DIR / 'MDEQ_Small_Cls.pkl',
+            'TRAIN.PRETRAIN_STEPS', 0,
+        ]
     args = Args(
         cfg=str(CONFIG_DIR / 'imagenet' / 'cls_mdeq_SMALL.yaml'),
         logDir=str(LOGS_DIR) + '/',
@@ -55,11 +66,7 @@ def train_classifier(n_epochs=100):
         testModel='',
         percent=1.0,
         local_rank=0,
-        opts=[
-            'DATASET.ROOT', str(IMAGENET_DIR) + '/',
-            'GPUS', [0],
-            'TRAIN.END_EPOCH', n_epochs,
-        ],
+        opts=opts,
     )
     update_config(config, args)
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
