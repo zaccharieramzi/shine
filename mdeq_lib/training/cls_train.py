@@ -55,7 +55,7 @@ def train_classifier(n_epochs=100, pretrained=False):
     ]
     if pretrained:
         opts += [
-            'MODEL.PRETRAINED', WORK_DIR / 'MDEQ_Small_Cls.pkl',
+            'MODEL.PRETRAINED', str(WORK_DIR / 'MDEQ_Small_Cls.pkl'),
             'TRAIN.PRETRAIN_STEPS', 0,
         ]
     args = Args(
