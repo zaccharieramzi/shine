@@ -25,6 +25,14 @@ from torch.utils.tensorboard import SummaryWriter
 import mdeq_lib.models as models
 from mdeq_lib.config import config
 from mdeq_lib.config import update_config
+from mdeq_lib.config.env_config import (
+    LOGS_DIR,
+    CHECKPOINTS_DIR,
+    DATA_DIR,
+    CONFIG_DIR,
+    IMAGENET_DIR,
+    WORK_DIR,
+)
 from mdeq_lib.core.cls_function import train, validate
 from mdeq_lib.utils.modelsummary import get_model_summary
 from mdeq_lib.utils.utils import get_optimizer
@@ -39,25 +47,26 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-LOGS_DIR = Path('./logs')
-CHECKPOINTS_DIR = Path('../new_models')
-DATA_DIR = Path('../data')
-CONFIG_DIR = Path('../experiments')
-
-def train_classifier(n_epochs=100):
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
+    opts = [
+        'DATASET.ROOT', str(IMAGENET_DIR) + '/',
+        'GPUS', list(range(n_gpus)),
+        'TRAIN.END_EPOCH', n_epochs,
+    ]
+    if pretrained:
+        opts += [
+            'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / 'MDEQ_Small_Cls.pkl'),
+            'TRAIN.PRETRAIN_STEPS', 0,
+        ]
     args = Args(
         cfg=str(CONFIG_DIR / 'imagenet' / 'cls_mdeq_SMALL.yaml'),
         logDir=str(LOGS_DIR) + '/',
         modelDir=str(CHECKPOINTS_DIR) + '/',
-        dataDir=str(DATA_DIR) + '/',
+        dataDir=str(IMAGENET_DIR) + '/',
         testModel='',
         percent=1.0,
         local_rank=0,
-        opts=[
-            'DATASET.ROOT', str(DATA_DIR) + '/',
-            'GPUS', [0],
-            'TRAIN.END_EPOCH', n_epochs,
-        ],
+        opts=opts,
     )
     update_config(config, args)
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
@@ -89,7 +98,6 @@ def train_classifier(n_epochs=100):
     models_dst_dir = os.path.join(final_output_dir, 'models')
     if os.path.exists(models_dst_dir):
         shutil.rmtree(models_dst_dir)
-    shutil.copytree(os.path.join(this_dir, '../lib/models'), models_dst_dir)
 
     writer_dict = {
         'writer': SummaryWriter(log_dir=tb_log_dir),
