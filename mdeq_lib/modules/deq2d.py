@@ -100,7 +100,7 @@ class DEQFunc2d(Function):
             Us = result_info['Us']
             VTs = result_info['VTs']
             nstep = result_info['nstep']
-            qN_tensors = (Us, VTs, nstep)
+            qN_tensors = (Us, VTs, torch.Tensor(nstep))
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.
             return tuple(z1_est) + qN_tensors
