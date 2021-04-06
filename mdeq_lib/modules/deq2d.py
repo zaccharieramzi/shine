@@ -135,8 +135,11 @@ class DEQModule2d(nn.Module):
         def backward(ctx, grad):
             # grad should have dimension (bsz x d_model x seq_len)
             bsz, d_model, seq_len = grad.size()
+            # grad is basically dl/dz^star
             grad = grad.clone()
+            # z1 is the predicted fixed point
             z1, = ctx.saved_tensors
+            # u is the injection
             u = ctx.u
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
@@ -149,16 +152,28 @@ class DEQModule2d(nn.Module):
 
                 dl_df_est = rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
             else:
+                # here func is the mdeq module, that is the function defining the fixed point
                 func = ctx.func
                 z1_temp = z1.clone().detach().requires_grad_()
                 u_temp = [elem.clone().detach() for elem in u]
                 args_temp = args[:-1]
 
                 with torch.enable_grad():
+                    # this allows to compute the jacobian of the function
+                    # g defined in the paper
+                    # indeed here DEQFunc2d.g is not the application of func
+                    # but rather its root finding equivalent
                     y = DEQFunc2d.g(func, z1_temp, u_temp, cutoffs, *args_temp)
 
                 def g(x):
+                    # this g here is supposed to be the function defining the
+                    # root finding problem in eq 4 of the MDEQ paper
+                    # recall that y here is z^star in the paper
+                    # x is the x of the paper
                     y.backward(x, retain_graph=True)  # Retain for future calls to g
+                    # z1_temp.grad is the vector-Jacobian product obtained via
+                    # automatic-differentiation
+                    # res is therefore the new estimate of x
                     res = z1_temp.grad + grad
                     z1_temp.grad.zero_()
                     return res
@@ -167,6 +182,10 @@ class DEQModule2d(nn.Module):
                 dl_df_est = torch.zeros_like(grad)
 
                 result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
+                # dl_df_est is the approximation of the first part of the derivation
+                # eq 3: it's dl/dz^star * (-Jg^-1)
+                # which is why it's called dl / df where f is the function f of the
+                # paper
                 dl_df_est = result_info['result']
                 nstep = result_info['nstep']
                 lowest_step = result_info['lowest_step']
