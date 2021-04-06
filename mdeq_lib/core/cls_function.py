@@ -9,7 +9,7 @@ import logging
 
 import torch
 
-from core.cls_evaluate import accuracy
+from mdeq_lib.core.cls_evaluate import accuracy
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
         # train on partial training data
         if i >= effec_batch_num:
             break
-            
+
         # measure data loading time
         data_time.update(time.time() - end)
         #target = target - 1 # Specific for imagenet
@@ -101,7 +101,7 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
         end = time.time()
         for i, (input, target) in enumerate(val_loader):
             # compute output
-            output = model(input, 
+            output = model(input,
                            train_step=-1,       # Evaluate using MDEQ (even when pre-training)
                            writer=writer_dict['writer'])
             target = target.cuda(non_blocking=True)
@@ -117,7 +117,7 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-            
+
         msg = 'Test: Time {batch_time.avg:.3f}\t' \
               'Loss {loss.avg:.4f}\t' \
               'Error@1 {error1:.3f}\t' \
