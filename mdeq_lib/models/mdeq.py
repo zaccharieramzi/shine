@@ -256,7 +256,7 @@ def get_cls_net(config, **kwargs):
     global BN_MOMENTUM
     BN_MOMENTUM = 0.1
     model = MDEQClsNet(config, **kwargs)
-    model.init_weights()
+    model.init_weights(config.MODEL.PRETRAINED)
     return model
 
 
