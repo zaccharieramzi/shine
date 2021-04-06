@@ -31,6 +31,7 @@ from mdeq_lib.config.env_config import (
     DATA_DIR,
     CONFIG_DIR,
     IMAGENET_DIR,
+    CIFAR_DIR,
     WORK_DIR,
 )
 from mdeq_lib.core.cls_function import train, validate
@@ -47,9 +48,13 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet'):
+    if dataset:
+        data_dir = IMAGENET_DIR
+    else:
+        data_dir = CIFAR_DIR
     opts = [
-        'DATASET.ROOT', str(IMAGENET_DIR) + '/',
+        'DATASET.ROOT', str(data_dir) + '/',
         'GPUS', list(range(n_gpus)),
         'TRAIN.END_EPOCH', n_epochs,
     ]
@@ -59,10 +64,10 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
             'TRAIN.PRETRAIN_STEPS', 0,
         ]
     args = Args(
-        cfg=str(CONFIG_DIR / 'imagenet' / 'cls_mdeq_SMALL.yaml'),
+        cfg=str(CONFIG_DIR / dataset / 'cls_mdeq_SMALL.yaml'),
         logDir=str(LOGS_DIR) + '/',
         modelDir=str(CHECKPOINTS_DIR) + '/',
-        dataDir=str(IMAGENET_DIR) + '/',
+        dataDir=str(data_dir) + '/',
         testModel='',
         percent=1.0,
         local_rank=0,
