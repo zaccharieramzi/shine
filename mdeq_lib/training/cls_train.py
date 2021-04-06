@@ -48,7 +48,7 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
     if dataset == 'imagenet':
         data_dir = IMAGENET_DIR
     else:
@@ -89,7 +89,7 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
-    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(config).cuda()
+    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(config, shine=shine).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
     logger.info(get_model_summary(model, dump_input))
