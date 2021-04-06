@@ -89,7 +89,6 @@ def train_classifier(n_epochs=100):
     models_dst_dir = os.path.join(final_output_dir, 'models')
     if os.path.exists(models_dst_dir):
         shutil.rmtree(models_dst_dir)
-    shutil.copytree(os.path.join(this_dir, '../lib/models'), models_dst_dir)
 
     writer_dict = {
         'writer': SummaryWriter(log_dir=tb_log_dir),
