@@ -79,7 +79,7 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'train')
+        config, args.cfg, 'train', shine=shine)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
