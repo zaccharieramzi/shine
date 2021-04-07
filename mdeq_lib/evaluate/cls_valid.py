@@ -69,18 +69,29 @@ def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=
     criterion = torch.nn.CrossEntropyLoss().cuda()
 
     # Data loading code
-    valdir = os.path.join(config.DATASET.ROOT,
-                          config.DATASET.TEST_SET)
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    dataset_name = config.DATASET.DATASET
 
-    valid_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(valdir, transforms.Compose([
+    if dataset_name == 'imagenet':
+        valdir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TEST_SET)
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transform_valid = transforms.Compose([
             transforms.Resize(int(config.MODEL.IMAGE_SIZE[0] / 0.875)),
             transforms.CenterCrop(config.MODEL.IMAGE_SIZE[0]),
             transforms.ToTensor(),
             normalize,
-        ])),
+        ])
+        valid_dataset = datasets.ImageFolder(valdir, transform_valid)
+    else:
+        assert dataset_name == "cifar10", "Only CIFAR-10 is supported at this phase"
+        normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        transform_valid = transforms.Compose([
+            transforms.ToTensor(),
+            normalize,
+        ])
+        valid_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=False, download=True, transform=transform_valid)
+
+    valid_loader = torch.utils.data.DataLoader(
+        valid_dataset,
         batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus),
         shuffle=False,
         num_workers=config.WORKERS,
