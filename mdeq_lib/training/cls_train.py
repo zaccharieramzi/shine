@@ -48,7 +48,7 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
+def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
     if dataset == 'imagenet':
         data_dir = IMAGENET_DIR
     else:
@@ -74,6 +74,16 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
         opts=opts,
     )
     update_config(config, args)
+    return args
+
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
+    args = update_config_w_args(
+        n_epochs=n_epochs,
+        pretrained=pretrained,
+        n_gpus=n_gpus,
+        dataset=dataset,
+        model_size=model_size,
+    )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
