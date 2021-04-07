@@ -116,4 +116,4 @@ def evaluate_classifier(
         final_output_dir,
         tb_log_dir,
         None,
-    ).cpu()
+    ).cpu().numpy()
