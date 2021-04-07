@@ -112,7 +112,7 @@ class DEQFunc2d(Function):
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy, shine=False):
+    def __init__(self, func, func_copy, shine=False, fpn=False):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
