@@ -99,11 +99,12 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
 
     with torch.no_grad():
         end = time.time()
+        extra_kwargs = dict(writer=writer_dict['writer']) if writer_dict is not None else {}
         for i, (input, target) in enumerate(val_loader):
             # compute output
             output = model(input,
                            train_step=-1,       # Evaluate using MDEQ (even when pre-training)
-                           writer=writer_dict['writer'])
+                           **extra_kwargs)
             target = target.cuda(non_blocking=True)
 
             loss = criterion(output, target)
