@@ -99,7 +99,7 @@ def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=
     )
 
     # evaluate on validation set
-    validate(
+    return validate(
         config,
         valid_loader,
         model,
