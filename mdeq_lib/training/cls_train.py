@@ -76,7 +76,15 @@ def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imag
     update_config(config, args)
     return args
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
+def train_classifier(
+    n_epochs=100,
+    pretrained=False,
+    n_gpus=1,
+    dataset='imagenet',
+    model_size='SMALL',
+    shine=False,
+    fpn=False,
+):
     args = update_config_w_args(
         n_epochs=n_epochs,
         pretrained=pretrained,
@@ -89,7 +97,7 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'train', shine=shine)
+        config, args.cfg, 'train', shine=shine, fpn=fpn)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
@@ -99,7 +107,11 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
-    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(config, shine=shine).cuda()
+    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
+        config,
+        shine=shine,
+        fpn=fpn,
+    ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
     logger.info(get_model_summary(model, dump_input))

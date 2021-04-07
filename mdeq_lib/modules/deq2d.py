@@ -117,6 +117,7 @@ class DEQModule2d(nn.Module):
         self.func = func
         self.func_copy = func_copy
         self.shine = shine
+        self.fpn = fpn
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -144,12 +145,14 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine = args[-5:]
+            threshold, train_step, writer, qN_tensors, shine, fpn = args[-6:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
 
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+            elif fpn:
+                dl_df_est = - grad
             else:
                 # here func is the mdeq module, that is the function defining the fixed point
                 func = ctx.func

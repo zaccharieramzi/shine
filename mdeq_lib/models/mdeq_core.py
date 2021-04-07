@@ -352,7 +352,7 @@ class MDEQModule(nn.Module):
 
 class MDEQNet(nn.Module):
 
-    def __init__(self, cfg, shine=False, **kwargs):
+    def __init__(self, cfg, shine=False, fpn=False, **kwargs):
         """
         Build an MDEQ model with the given hyperparameters
         """
@@ -392,7 +392,7 @@ class MDEQNet(nn.Module):
 
         for param in self.fullstage_copy.parameters():
             param.requires_grad_(False)
-        self.deq = MDEQWrapper(self.fullstage, self.fullstage_copy, shine=shine)
+        self.deq = MDEQWrapper(self.fullstage, self.fullstage_copy, shine=shine, fpn=fpn)
         self.iodrop = VariationalHidDropout2d(0.0)
 
     def parse_cfg(self, cfg):

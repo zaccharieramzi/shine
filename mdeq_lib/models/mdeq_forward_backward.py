@@ -14,8 +14,8 @@ __author__ = "shaojieb"
 
 
 class MDEQWrapper(DEQModule2d):
-    def __init__(self, func, func_copy, shine=False):
-        super(MDEQWrapper, self).__init__(func, func_copy, shine=shine)
+    def __init__(self, func, func_copy, shine=False, fpn=False):
+        super(MDEQWrapper, self).__init__(func, func_copy, shine=shine, fpn=fpn)
 
     def forward(self, z1, u, **kwargs):
         train_step = kwargs.get('train_step', -1)
@@ -32,6 +32,16 @@ class MDEQWrapper(DEQModule2d):
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in new_z1]
         if self.training:
             new_z1 = DEQFunc2d.list2vec(DEQFunc2d.f(self.func, new_z1, u, threshold, train_step))
-            new_z1 = self.Backward.apply(self.func_copy, new_z1, u, threshold, train_step, writer, qN_tensors, self.shine)
+            new_z1 = self.Backward.apply(
+                self.func_copy,
+                new_z1,
+                u,
+                threshold,
+                train_step,
+                writer,
+                qN_tensors,
+                self.shine,
+                self.fpn,
+            )
             new_z1 = DEQFunc2d.vec2list(new_z1, cutoffs)
         return new_z1

@@ -27,7 +27,7 @@ from mdeq_lib.utils.modelsummary import get_model_summary
 from mdeq_lib.utils.utils import create_logger
 
 
-def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
+def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False, fpn=False):
     args = update_config_w_args(
         n_gpus=n_gpus,
         dataset=dataset,
@@ -35,7 +35,7 @@ def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=
     )
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'valid', shine=shine)
+        config, args.cfg, 'valid', shine=shine, fpn=fpn)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
@@ -46,7 +46,7 @@ def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
     model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
-        config, shine=shine)
+        config, shine=shine, fpn=fpn)
 
     dump_input = torch.rand(
         (1, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0])
