@@ -31,6 +31,7 @@ from mdeq_lib.config.env_config import (
     DATA_DIR,
     CONFIG_DIR,
     IMAGENET_DIR,
+    CIFAR_DIR,
     WORK_DIR,
 )
 from mdeq_lib.core.cls_function import train, validate
@@ -47,22 +48,26 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
+def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
+    if dataset == 'imagenet':
+        data_dir = IMAGENET_DIR
+    else:
+        data_dir = CIFAR_DIR
     opts = [
-        'DATASET.ROOT', str(IMAGENET_DIR) + '/',
+        'DATASET.ROOT', str(data_dir) + '/',
         'GPUS', list(range(n_gpus)),
         'TRAIN.END_EPOCH', n_epochs,
     ]
     if pretrained:
         opts += [
-            'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / 'MDEQ_Small_Cls.pkl'),
+            'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / f'MDEQ_{model_size}_Cls.pkl'),
             'TRAIN.PRETRAIN_STEPS', 0,
         ]
     args = Args(
-        cfg=str(CONFIG_DIR / 'imagenet' / 'cls_mdeq_SMALL.yaml'),
+        cfg=str(CONFIG_DIR / dataset / f'cls_mdeq_{model_size}.yaml'),
         logDir=str(LOGS_DIR) + '/',
         modelDir=str(CHECKPOINTS_DIR) + '/',
-        dataDir=str(IMAGENET_DIR) + '/',
+        dataDir=str(data_dir) + '/',
         testModel='',
         percent=1.0,
         local_rank=0,
@@ -74,7 +79,7 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'train')
+        config, args.cfg, 'train', shine=shine)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
@@ -84,7 +89,7 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1):
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
-    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(config).cuda()
+    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(config, shine=shine).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
     logger.info(get_model_summary(model, dump_input))
