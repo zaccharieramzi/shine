@@ -152,7 +152,7 @@ class DEQModule2d(nn.Module):
 
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
             elif fpn:
-                dl_df_est = - grad
+                dl_df_est = grad
             else:
                 # here func is the mdeq module, that is the function defining the fixed point
                 func = ctx.func
