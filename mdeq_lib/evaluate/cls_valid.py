@@ -27,7 +27,14 @@ from mdeq_lib.utils.modelsummary import get_model_summary
 from mdeq_lib.utils.utils import create_logger
 
 
-def evaluate_classifier(n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False, fpn=False):
+def evaluate_classifier(
+    n_gpus=1,
+    dataset='imagenet',
+    model_size='SMALL',
+    shine=False,
+    fpn=False,
+    n_samples=None,
+):
     args = update_config_w_args(
         n_gpus=n_gpus,
         dataset=dataset,
