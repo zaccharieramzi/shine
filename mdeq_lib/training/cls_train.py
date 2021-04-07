@@ -84,6 +84,7 @@ def train_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
+    save_at=None,
 ):
     args = update_config_w_args(
         n_epochs=n_epochs,
@@ -256,14 +257,18 @@ def train_classifier(
             best_model = False
 
         logger.info('=> saving checkpoint to {}'.format(final_output_dir))
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'model': config.MODEL.NAME,
-            'state_dict': model.module.state_dict(),
-            'perf': perf_indicator,
-            'optimizer': optimizer.state_dict(),
-            'lr_scheduler': lr_scheduler.state_dict(),
-        }, best_model, final_output_dir, filename='checkpoint.pth.tar')
+        checkpoint_files = ['checkpoint.pth.tar']
+        if save_at is not None and save_at == epoch:
+            checkpoint_files.append(f'checkpoint_{epoch}.pth.tar')
+        for checkpoint_file in checkpoint_files:
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'model': config.MODEL.NAME,
+                'state_dict': model.module.state_dict(),
+                'perf': perf_indicator,
+                'optimizer': optimizer.state_dict(),
+                'lr_scheduler': lr_scheduler.state_dict(),
+            }, best_model, final_output_dir, filename=checkpoint_file)
 
     final_model_state_file = os.path.join(final_output_dir,
                                           'final_state.pth.tar')
