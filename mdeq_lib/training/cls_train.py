@@ -11,6 +11,7 @@ import pprint
 import shutil
 import sys
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -85,7 +86,10 @@ def train_classifier(
     shine=False,
     fpn=False,
     save_at=None,
+    seed=0,
 ):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     args = update_config_w_args(
         n_epochs=n_epochs,
         pretrained=pretrained,
