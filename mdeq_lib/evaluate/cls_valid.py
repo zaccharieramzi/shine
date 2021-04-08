@@ -10,6 +10,7 @@ import sys
 import shutil
 import pprint
 
+import numpy as np
 import torch
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
@@ -34,7 +35,10 @@ def evaluate_classifier(
     shine=False,
     fpn=False,
     n_samples=None,
+    seed=0,
 ):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     args = update_config_w_args(
         n_gpus=n_gpus,
         dataset=dataset,
