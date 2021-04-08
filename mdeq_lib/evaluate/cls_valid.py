@@ -46,7 +46,7 @@ def evaluate_classifier(
     )
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'valid', shine=shine, fpn=fpn)
+        config, args.cfg, 'valid', shine=shine, fpn=fpn, seed=seed)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
