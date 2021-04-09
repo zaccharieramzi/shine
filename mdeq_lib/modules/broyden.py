@@ -97,26 +97,26 @@ def line_search(update, x0, g0, g, nstep=0, on=True):
         g0_new = g(x_est)
     return x_est, g0_new, x_est - x0, g0_new - g0, ite
 
-def rmatvec(part_Us, part_VTs, x):
+def rmatvec(part_Us, part_VTs, x, alpha=1):
     # Compute x^T(-I + UV^T)
     # x: (N, 2d, L')
     # part_Us: (N, 2d, L', threshold)
     # part_VTs: (N, threshold, 2d, L')
     if part_Us.nelement() == 0:
-        return -x
+        return -alpha*x
     xTU = torch.einsum('bij, bijd -> bd', x, part_Us)   # (N, threshold)
-    return -x + torch.einsum('bd, bdij -> bij', xTU, part_VTs)    # (N, 2d, L'), but should really be (N, 1, (2d*L'))
+    return -alpha*x + torch.einsum('bd, bdij -> bij', xTU, part_VTs)    # (N, 2d, L'), but should really be (N, 1, (2d*L'))
 
 
-def matvec(part_Us, part_VTs, x):
+def matvec(part_Us, part_VTs, x, alpha=1):
     # Compute (-I + UV^T)x
     # x: (N, 2d, L')
     # part_Us: (N, 2d, L', threshold)
     # part_VTs: (N, threshold, 2d, L')
     if part_Us.nelement() == 0:
-        return -x
+        return -alpha*x
     VTx = torch.einsum('bdij, bij -> bd', part_VTs, x)  # (N, threshold)
-    return -x + torch.einsum('bijd, bd -> bij', part_Us, VTx)     # (N, 2d, L'), but should really be (N, (2d*L'), 1)
+    return -alpha*x + torch.einsum('bijd, bd -> bij', part_Us, VTx)     # (N, 2d, L'), but should really be (N, (2d*L'), 1)
 
 
 def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
@@ -142,6 +142,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     protect_thres = 1e6 * n_elem
     lowest = new_objective
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
+    alpha = 1
 
     while new_objective >= eps and nstep < threshold:
         x_est, gx, delta_x, delta_gx, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls)
@@ -168,13 +169,13 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
             break
 
         part_Us, part_VTs = Us[:,:,:,:(nstep-1)], VTs[:,:(nstep-1)]
-        vT = rmatvec(part_Us, part_VTs, delta_x)
-        u = (delta_x - matvec(part_Us, part_VTs, delta_gx)) / torch.einsum('bij, bij -> b', vT, delta_gx)[:,None,None]
+        vT = rmatvec(part_Us, part_VTs, delta_x, alpha=alpha)
+        u = (delta_x - matvec(part_Us, part_VTs, delta_gx), alpha=alpha) / torch.einsum('bij, bij -> b', vT, delta_gx)[:,None,None]
         vT[vT != vT] = 0
         u[u != u] = 0
         VTs[:,(nstep-1) % LBFGS_thres] = vT
         Us[:,:,:,(nstep-1) % LBFGS_thres] = u
-        update = -matvec(Us[:,:,:,:nstep], VTs[:,:nstep], gx)
+        update = -matvec(Us[:,:,:,:nstep], VTs[:,:nstep], gx, alpha=alpha)
 
     # NOTE: why was this present originally? is it a question of memory?
     # Us, VTs = None, None
