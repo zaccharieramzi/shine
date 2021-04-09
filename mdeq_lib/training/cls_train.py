@@ -11,6 +11,7 @@ import pprint
 import shutil
 import sys
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -48,7 +49,7 @@ Args = namedtuple(
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
 
-def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL', shine=False):
+def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
     if dataset == 'imagenet':
         data_dir = IMAGENET_DIR
     else:
@@ -74,12 +75,35 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
         opts=opts,
     )
     update_config(config, args)
+    return args
+
+def train_classifier(
+    n_epochs=100,
+    pretrained=False,
+    n_gpus=1,
+    dataset='imagenet',
+    model_size='SMALL',
+    shine=False,
+    fpn=False,
+    save_at=None,
+    restart_from=None,
+    seed=0,
+):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    args = update_config_w_args(
+        n_epochs=n_epochs,
+        pretrained=pretrained,
+        n_gpus=n_gpus,
+        dataset=dataset,
+        model_size=model_size,
+    )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'train', shine=shine)
+        config, args.cfg, 'train', shine=shine, fpn=fpn, seed=seed)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
@@ -89,7 +113,11 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
-    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(config, shine=shine).cuda()
+    model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
+        config,
+        shine=shine,
+        fpn=fpn,
+    ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
     logger.info(get_model_summary(model, dump_input))
@@ -124,8 +152,11 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
     best_model = False
     last_epoch = config.TRAIN.BEGIN_EPOCH
     if config.TRAIN.RESUME:
-        model_state_file = os.path.join(final_output_dir,
-                                        'checkpoint.pth.tar')
+        if restart_from is None:
+            resume_file = 'checkpoint.pth.tar'
+        else:
+            resume_file = f'checkpoint_{restart_from}.pth.tar'
+        model_state_file = os.path.join(final_output_dir, resume_file)
         if os.path.isfile(model_state_file):
             checkpoint = torch.load(model_state_file)
             last_epoch = checkpoint['epoch']
@@ -234,14 +265,18 @@ def train_classifier(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet
             best_model = False
 
         logger.info('=> saving checkpoint to {}'.format(final_output_dir))
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'model': config.MODEL.NAME,
-            'state_dict': model.module.state_dict(),
-            'perf': perf_indicator,
-            'optimizer': optimizer.state_dict(),
-            'lr_scheduler': lr_scheduler.state_dict(),
-        }, best_model, final_output_dir, filename='checkpoint.pth.tar')
+        checkpoint_files = ['checkpoint.pth.tar']
+        if save_at is not None and save_at == epoch:
+            checkpoint_files.append(f'checkpoint_{epoch}.pth.tar')
+        for checkpoint_file in checkpoint_files:
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'model': config.MODEL.NAME,
+                'state_dict': model.module.state_dict(),
+                'perf': perf_indicator,
+                'optimizer': optimizer.state_dict(),
+                'lr_scheduler': lr_scheduler.state_dict(),
+            }, best_model, final_output_dir, filename=checkpoint_file)
 
     final_model_state_file = os.path.join(final_output_dir,
                                           'final_state.pth.tar')

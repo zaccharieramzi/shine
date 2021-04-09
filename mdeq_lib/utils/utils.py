@@ -80,7 +80,7 @@ class AverageMeter(object):
         return self.avg
 
 
-def create_logger(cfg, cfg_name, phase='train', shine=False):
+def create_logger(cfg, cfg_name, phase='train', shine=False, fpn=False, seed=0):
     root_output_dir = Path(cfg.OUTPUT_DIR)
     # set up logger
     if not root_output_dir.exists():
@@ -92,6 +92,9 @@ def create_logger(cfg, cfg_name, phase='train', shine=False):
     cfg_name = os.path.basename(cfg_name).split('.')[0]
     if shine:
         cfg_name += '_shine'
+    if fpn:
+        cfg_name += '_fpn'
+    cfg_name += f'_{seed}'
 
     final_output_dir = root_output_dir / dataset / cfg_name
 
