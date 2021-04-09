@@ -144,7 +144,8 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
     # from scipy
     # alpha = 0.5*max(norm(x0), 1) / normf0
-    alpha = 1
+    alpha = 0.5 * torch.maximum(torch.norm(x_est).item(), torch.tensor(1))
+    alpha = alpha / new_objective
 
     while new_objective >= eps and nstep < threshold:
         x_est, gx, delta_x, delta_gx, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls)
@@ -172,7 +173,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
 
         part_Us, part_VTs = Us[:,:,:,:(nstep-1)], VTs[:,:(nstep-1)]
         vT = rmatvec(part_Us, part_VTs, delta_x, alpha=alpha)
-        u = (delta_x - matvec(part_Us, part_VTs, delta_gx), alpha=alpha) / torch.einsum('bij, bij -> b', vT, delta_gx)[:,None,None]
+        u = (delta_x - matvec(part_Us, part_VTs, delta_gx, alpha=alpha)) / torch.einsum('bij, bij -> b', vT, delta_gx)[:,None,None]
         vT[vT != vT] = 0
         u[u != u] = 0
         VTs[:,(nstep-1) % LBFGS_thres] = vT
