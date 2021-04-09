@@ -86,6 +86,7 @@ def train_classifier(
     shine=False,
     fpn=False,
     save_at=None,
+    restart_from=None,
     seed=0,
 ):
     np.random.seed(seed)
@@ -151,8 +152,11 @@ def train_classifier(
     best_model = False
     last_epoch = config.TRAIN.BEGIN_EPOCH
     if config.TRAIN.RESUME:
-        model_state_file = os.path.join(final_output_dir,
-                                        'checkpoint.pth.tar')
+        if restart_from is None:
+            resume_file = 'checkpoint.pth.tar'
+        else:
+            resume_file = f'checkpoint_{restart_from}.pth.tar'
+        model_state_file = os.path.join(final_output_dir, resume_file)
         if os.path.isfile(model_state_file):
             checkpoint = torch.load(model_state_file)
             last_epoch = checkpoint['epoch']
