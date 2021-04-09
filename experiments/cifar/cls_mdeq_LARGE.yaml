@@ -42,8 +42,8 @@ MODEL:
       - 256
       FUSE_METHOD: SUM
 CUDNN:
-  BENCHMARK: true
-  DETERMINISTIC: false
+  BENCHMARK: false
+  DETERMINISTIC: true
   ENABLED: true
 DATASET:
   DATASET: 'cifar10'
