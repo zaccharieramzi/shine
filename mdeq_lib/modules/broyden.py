@@ -144,7 +144,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
     # from scipy
     # alpha = 0.5*max(norm(x0), 1) / normf0
-    alpha = 0.5 * torch.maximum(torch.norm(x_est).item(), torch.tensor(1))
+    alpha = 0.5 * torch.max(torch.tensor([torch.norm(x_est).item(), 1]))
     alpha = alpha / new_objective
 
     while new_objective >= eps and nstep < threshold:
