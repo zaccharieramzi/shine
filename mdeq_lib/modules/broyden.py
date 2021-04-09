@@ -142,6 +142,8 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     protect_thres = 1e6 * n_elem
     lowest = new_objective
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
+    # from scipy
+    # alpha = 0.5*max(norm(x0), 1) / normf0
     alpha = 1
 
     while new_objective >= eps and nstep < threshold:
