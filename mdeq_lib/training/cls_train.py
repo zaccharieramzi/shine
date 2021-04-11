@@ -52,7 +52,7 @@ Args = namedtuple(
 
 def worker_init_fn(worker_id, seed=0):
     """Helper to make random number generation independent in each process."""
-    np.random.seed(seed + worker_id)
+    np.random.seed(8*seed + worker_id)
 
 def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
     if dataset == 'imagenet':
