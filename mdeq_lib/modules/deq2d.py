@@ -99,7 +99,7 @@ class DEQFunc2d(Function):
             z1_est, result_info = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args)  # args include pos_emb, threshold, train_step
             Us = result_info['Us']
             VTs = result_info['VTs']
-            nstep = result_info['nstep']
+            nstep = result_info['lowest_step']
             qN_tensors = (Us, VTs, torch.tensor(nstep))
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.

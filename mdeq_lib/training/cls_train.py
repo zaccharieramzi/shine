@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+from functools import partial
 from collections import namedtuple
 from pathlib import Path
 import pprint
@@ -48,6 +49,10 @@ Args = namedtuple(
     'Args',
     'cfg logDir modelDir dataDir testModel percent local_rank opts'.split()
 )
+
+def worker_init_fn(worker_id, seed=0):
+    """Helper to make random number generation independent in each process."""
+    np.random.seed(8*seed + worker_id)
 
 def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
     if dataset == 'imagenet':
@@ -217,14 +222,16 @@ def train_classifier(
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
         shuffle=True,
         num_workers=config.WORKERS,
-        pin_memory=True
+        pin_memory=True,
+        worker_init_fn=partial(worker_init_fn, seed=seed),
     )
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus),
         shuffle=False,
         num_workers=config.WORKERS,
-        pin_memory=True
+        pin_memory=True,
+        worker_init_fn=partial(worker_init_fn, seed=seed),
     )
 
     # Learning rate scheduler
