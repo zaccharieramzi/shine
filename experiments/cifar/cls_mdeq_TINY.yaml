@@ -35,6 +35,7 @@ MODEL:
       - 24
       - 24
       FUSE_METHOD: SUM
+      GROUP_NORM: false
 CUDNN:
   BENCHMARK: false
   DETERMINISTIC: true
