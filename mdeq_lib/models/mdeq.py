@@ -71,6 +71,50 @@ class Bottleneck(nn.Module):
 
         return out
 
+class BottleneckGroup(nn.Module):
+    expansion = 4
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None, num_groups=4):
+        """
+        A bottleneck block with receptive field only 3x3. (This is not used in MDEQ; only
+        in the classifier layer).
+        """
+        super(BottleneckGroup, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.bn1 = nn.GroupNorm(num_groups, planes, affine=False)
+        self.conv2 = conv3x3(planes, planes, stride=stride)
+        self.bn2 = nn.GroupNorm(num_groups, planes, affine=False)
+        self.conv3 = nn.Conv2d(planes, planes*self.expansion, kernel_size=1, bias=False)
+        self.bn3 = nn.GroupNorm(num_groups, planes*self.expansion, affine=False)
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+        self.stride = stride
+        self.num_groups = num_groups
+
+    def forward(self, x, injection=None):
+        if injection is None:
+            injection = 0
+        residual = x
+
+        out = self.conv1(x) + injection
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
 
 class MDEQClsNet(MDEQNet):
     def __init__(self, cfg, **kwargs):
@@ -81,26 +125,32 @@ class MDEQClsNet(MDEQNet):
         super(MDEQClsNet, self).__init__(cfg, BN_MOMENTUM=BN_MOMENTUM, **kwargs)
         self.head_channels = cfg['MODEL']['EXTRA']['FULL_STAGE']['HEAD_CHANNELS']
         self.final_chansize = cfg['MODEL']['EXTRA']['FULL_STAGE']['FINAL_CHANSIZE']
+        self.group_norm = cfg['MODEL']['EXTRA']['FULL_STAGE']['GROUP_NORM']
 
         # Classification Head
         self.incre_modules, self.downsamp_modules, self.final_layer = self._make_head(self.num_channels)
         self.classifier = nn.Linear(self.final_chansize, self.num_classes)
 
-    def _make_head(self, pre_stage_channels):
+    def _make_head(self, pre_stage_channels, num_groups=4):
         """
         Create a classification head that:
            - Increase the number of features in each resolution
            - Downsample higher-resolution equilibria to the lowest-resolution and concatenate
            - Pass through a final FC layer for classification
         """
-        head_block = Bottleneck
+        if self.group_norm:
+            head_block = BottleneckGroup
+            norm = lambda x: nn.GroupNorm(num_groups, x)
+        else:
+            head_block = Bottleneck
+            norm = lambda x: nn.BatchNorm2d(out_channels, momentum=BN_MOMENTUM)
         d_model = self.init_chansize
         head_channels = self.head_channels
 
         # Increasing the number of channels on each resolution when doing classification.
         incre_modules = []
         for i, channels  in enumerate(pre_stage_channels):
-            incre_module = self._make_layer(head_block, channels, head_channels[i], blocks=1, stride=1)
+            incre_module = self._make_layer(head_block, channels, head_channels[i], blocks=1, stride=1, norm=norm)
             incre_modules.append(incre_module)
         incre_modules = nn.ModuleList(incre_modules)
 
@@ -111,7 +161,7 @@ class MDEQClsNet(MDEQNet):
             out_channels = head_channels[i+1] * head_block.expansion
 
             downsamp_module = nn.Sequential(conv3x3(in_channels, out_channels, stride=2, bias=True),
-                                            nn.BatchNorm2d(out_channels, momentum=BN_MOMENTUM),
+                                            norm(out_channels),
                                             nn.ReLU(inplace=True))
             downsamp_modules.append(downsamp_module)
         downsamp_modules = nn.ModuleList(downsamp_modules)
@@ -122,15 +172,15 @@ class MDEQClsNet(MDEQNet):
                                               kernel_size=1,
                                               stride=1,
                                               padding=0),
-                                    nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM),
+                                    norm(self.final_chansize),
                                     nn.ReLU(inplace=True))
         return incre_modules, downsamp_modules, final_layer
 
-    def _make_layer(self, block, inplanes, planes, blocks, stride=1):
+    def _make_layer(self, block, inplanes, planes, blocks, stride=1, norm=None):
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
             downsample = nn.Sequential(nn.Conv2d(inplanes, planes*block.expansion, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM))
+                norm(planes * block.expansion))
 
         layers = []
         layers.append(block(inplanes, planes, stride, downsample))
@@ -168,7 +218,7 @@ class MDEQClsNet(MDEQNet):
                 m.weight.data.normal_(0, 0.01)
                 if m.bias is not None:
                     m.bias.data.normal_(0, 0.01)
-            elif isinstance(m, nn.BatchNorm2d) and m.weight is not None:
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)) and m.weight is not None:
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
         if os.path.isfile(pretrained):

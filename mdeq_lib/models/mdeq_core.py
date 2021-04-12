@@ -362,12 +362,17 @@ class MDEQNet(nn.Module):
         self.parse_cfg(cfg)
         init_chansize = self.init_chansize
 
+        if self.group_norm:
+            norm = lambda: nn.GroupNorm(NUM_GROUPS, init_chansize)
+        else:
+            norm = lambda: nn.BatchNorm2d(init_chansize, momentum=BN_MOMENTUM)
+
         self.downsample = nn.Sequential(
             conv3x3(3, init_chansize, stride=(2 if self.downsample_times >= 1 else 1)),
-            nn.BatchNorm2d(init_chansize, momentum=BN_MOMENTUM),
+            norm(),
             nn.ReLU(inplace=True),
             conv3x3(init_chansize, init_chansize, stride=(2 if self.downsample_times >= 2 else 1)),
-            nn.BatchNorm2d(init_chansize, momentum=BN_MOMENTUM),
+            norm(),
             nn.ReLU(inplace=True)
         )
 
@@ -377,7 +382,7 @@ class MDEQNet(nn.Module):
             self.stage0 = None
         else:
             self.stage0 = nn.Sequential(nn.Conv2d(self.init_chansize, self.init_chansize, kernel_size=1, bias=False),
-                                        nn.BatchNorm2d(self.init_chansize, momentum=BN_MOMENTUM),
+                                        norm(),
                                         nn.ReLU(False))
 
         # PART II: MDEQ's f_\theta layer
@@ -414,6 +419,7 @@ class MDEQNet(nn.Module):
         self.num_classes = cfg['MODEL']['NUM_CLASSES']
         self.downsample_times = cfg['MODEL']['DOWNSAMPLE_TIMES']
         self.pretrain_steps = cfg['TRAIN']['PRETRAIN_STEPS']
+        self.group_norm = cfg['MODEL']['EXTRA']['FULL_STAGE']['GROUP_NORM']
         DEQ_EXPAND = cfg['MODEL']['EXPANSION_FACTOR']
         NUM_GROUPS = cfg['MODEL']['NUM_GROUPS']
 
