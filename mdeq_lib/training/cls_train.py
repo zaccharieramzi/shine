@@ -90,6 +90,7 @@ def train_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
+    gradient_correl=False,
     save_at=None,
     restart_from=None,
     seed=0,
@@ -122,6 +123,7 @@ def train_classifier(
         config,
         shine=shine,
         fpn=fpn,
+        gradient_correl=gradient_correl,
     ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()

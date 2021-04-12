@@ -14,8 +14,14 @@ __author__ = "shaojieb"
 
 
 class MDEQWrapper(DEQModule2d):
-    def __init__(self, func, func_copy, shine=False, fpn=False):
-        super(MDEQWrapper, self).__init__(func, func_copy, shine=shine, fpn=fpn)
+    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False):
+        super(MDEQWrapper, self).__init__(
+            func,
+            func_copy,
+            shine=shine,
+            fpn=fpn,
+            gradient_correl=gradient_correl,
+        )
 
     def forward(self, z1, u, **kwargs):
         train_step = kwargs.get('train_step', -1)
@@ -42,6 +48,7 @@ class MDEQWrapper(DEQModule2d):
                 qN_tensors,
                 self.shine,
                 self.fpn,
+                self.gradient_correl,
             )
             new_z1 = DEQFunc2d.vec2list(new_z1, cutoffs)
         return new_z1

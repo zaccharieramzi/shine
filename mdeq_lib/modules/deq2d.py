@@ -112,12 +112,13 @@ class DEQFunc2d(Function):
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy, shine=False, fpn=False):
+    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
         self.shine = shine
         self.fpn = fpn
+        self.gradient_correl = gradient_correl
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -145,7 +146,7 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn = args[-6:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl = args[-7:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
@@ -153,8 +154,10 @@ class DEQModule2d(nn.Module):
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
             elif fpn:
                 dl_df_est = grad
-            else:
+            if not(shine or fpn) or gradient_correl:
                 # here func is the mdeq module, that is the function defining the fixed point
+                if gradient_correl:
+                    dl_df_est_old = dl_df_est
                 func = ctx.func
                 z1_temp = z1.clone().detach().requires_grad_()
                 u_temp = [elem.clone().detach() for elem in u]
@@ -192,12 +195,29 @@ class DEQModule2d(nn.Module):
                 nstep = result_info['nstep']
                 lowest_step = result_info['lowest_step']
 
+                if gradient_correl:
+                    # compute correlation between the gradients
+                    correl = torch.dot(
+                        torch.flatten(dl_df_est),
+                        torch.flatten(dl_df_est_old),
+                    )
+                    scaling = torch.norm(dl_df_est) * torch.norm(dl_df_est_old)
+                    correl = correl / scaling
+                    # re-using the originally computed gradient to follow the
+                    # accelerated method direction
+                    dl_df_est = dl_df_est_old
+
                 if dl_df_est.get_device() == 0:
                     if writer is not None:
-                        writer.add_scalar('backward/diff', result_info['diff'], train_step)
-                        writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
-                        writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
-                        writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
+                        if gradient_correl:
+                            writer.add_scalar('backward/correl', correl, train_step)
+                        else:
+                            writer.add_scalar('backward/diff', result_info['diff'], train_step)
+                            writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
+                            writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
+                            writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
+
+
 
                 status = analyze_broyden(result_info, judge=True)
                 if status:
