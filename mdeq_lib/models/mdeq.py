@@ -168,7 +168,7 @@ class MDEQClsNet(MDEQNet):
         downsamp_modules = nn.ModuleList(downsamp_modules)
 
         # Final FC layers
-        final_layer = nn.Sequential(nn.Conv2d(head_channels[len(pre_stage_channels)-1] * head_block.expansion,
+        final_layer = nn.Sequential(nn.Conv2d(head_channels[len(pre_stage_channels)-1] * Bottleneck.expansion,
                                               self.final_chansize,
                                               kernel_size=1,
                                               stride=1,
@@ -179,13 +179,13 @@ class MDEQClsNet(MDEQNet):
 
     def _make_layer(self, block, inplanes, planes, blocks, stride=1, norm=None):
         downsample = None
-        if stride != 1 or inplanes != planes * block.expansion:
-            downsample = nn.Sequential(nn.Conv2d(inplanes, planes*block.expansion, kernel_size=1, stride=stride, bias=False),
-                norm(planes * block.expansion))
+        if stride != 1 or inplanes != planes * Bottleneck.expansion:
+            downsample = nn.Sequential(nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False),
+                norm(planes * Bottleneck.expansion))
 
         layers = []
         layers.append(block(inplanes, planes, stride, downsample))
-        inplanes = planes * block.expansion
+        inplanes = planes * Bottleneck.expansion
         for i in range(1, blocks):
             layers.append(block(inplanes, planes))
 
