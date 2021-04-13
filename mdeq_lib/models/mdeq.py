@@ -126,12 +126,13 @@ class MDEQClsNet(MDEQNet):
         self.head_channels = cfg['MODEL']['EXTRA']['FULL_STAGE']['HEAD_CHANNELS']
         self.final_chansize = cfg['MODEL']['EXTRA']['FULL_STAGE']['FINAL_CHANSIZE']
         self.group_norm = cfg['MODEL']['EXTRA']['FULL_STAGE']['GROUP_NORM']
+        self.num_groups = cfg['MODEL']['NUM_GROUPS']
 
         # Classification Head
         self.incre_modules, self.downsamp_modules, self.final_layer = self._make_head(self.num_channels)
         self.classifier = nn.Linear(self.final_chansize, self.num_classes)
 
-    def _make_head(self, pre_stage_channels, num_groups=4):
+    def _make_head(self, pre_stage_channels):
         """
         Create a classification head that:
            - Increase the number of features in each resolution
@@ -139,11 +140,11 @@ class MDEQClsNet(MDEQNet):
            - Pass through a final FC layer for classification
         """
         if self.group_norm:
-            head_block = BottleneckGroup
-            norm = lambda x: nn.GroupNorm(num_groups, x)
+            head_block = functools.partial(BottleneckGroup, num_groups=self.num_groups)
+            norm = lambda x: nn.GroupNorm(self.num_groups, x)
         else:
             head_block = Bottleneck
-            norm = lambda x: nn.BatchNorm2d(out_channels, momentum=BN_MOMENTUM)
+            norm = lambda x: nn.BatchNorm2d(x, momentum=BN_MOMENTUM)
         d_model = self.init_chansize
         head_channels = self.head_channels
 
