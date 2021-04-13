@@ -158,8 +158,8 @@ class MDEQClsNet(MDEQNet):
         # Downsample the high-resolution streams to perform classification
         downsamp_modules = []
         for i in range(len(pre_stage_channels)-1):
-            in_channels = head_channels[i] * head_block.expansion
-            out_channels = head_channels[i+1] * head_block.expansion
+            in_channels = head_channels[i] * Bottleneck.expansion
+            out_channels = head_channels[i+1] * Bottleneck.expansion
 
             downsamp_module = nn.Sequential(conv3x3(in_channels, out_channels, stride=2, bias=True),
                                             norm(out_channels),
