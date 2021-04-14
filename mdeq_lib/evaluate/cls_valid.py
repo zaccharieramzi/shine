@@ -127,6 +127,6 @@ def evaluate_classifier(
     else:
         return 'maxeigen', validate_contractivity(
             valid_loader,
-            model.module,
+            model.module.cuda(),
             n_iter=n_iter,
         ).cpu().numpy()
