@@ -138,6 +138,21 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
 
     return top1.avg
 
+def validate_contractivity(val_loader, model, n_iter=20):
+    max_eigens = AverageMeter()
+
+    # switch to evaluate mode
+    model.eval()
+
+    with torch.no_grad():
+        for i, (input, target) in enumerate(val_loader):
+            # compute output
+            output = model.power_iterations(input, n_iter=n_iter)
+            # measure accuracy and record loss
+            max_eigens.update(output, 1)
+
+    return max_eigens.avg
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
