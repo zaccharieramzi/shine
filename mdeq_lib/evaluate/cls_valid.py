@@ -105,7 +105,7 @@ def evaluate_classifier(
 
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus) if not check_contract else len(gpus),
+        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus) if not check_contract else 1,
         shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True
@@ -127,6 +127,6 @@ def evaluate_classifier(
     else:
         return 'maxeigen', validate_contractivity(
             valid_loader,
-            model,
+            model.module,
             n_iter=n_iter,
         ).cpu().numpy()
