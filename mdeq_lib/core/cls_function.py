@@ -147,7 +147,7 @@ def validate_contractivity(val_loader, model, n_iter=20):
     with torch.no_grad():
         for i, (input, target) in enumerate(val_loader):
             # compute output
-            output = model.power_iterations(input, n_iter=n_iter)
+            output = model.power_iterations(input.cuda(), n_iter=n_iter)
             # measure accuracy and record loss
             max_eigens.update(output, 1)
 
