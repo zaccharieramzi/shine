@@ -141,7 +141,7 @@ class MDEQClsNet(MDEQNet):
         """
         if self.group_norm:
             head_block = functools.partial(BottleneckGroup, num_groups=self.num_groups)
-            norm = lambda x: nn.GroupNorm(self.num_groups, x)
+            norm = lambda x: nn.GroupNorm(self.num_groups, x, affine=False)
         else:
             head_block = Bottleneck
             norm = lambda x: nn.BatchNorm2d(x, momentum=BN_MOMENTUM)
@@ -173,7 +173,7 @@ class MDEQClsNet(MDEQNet):
                                               kernel_size=1,
                                               stride=1,
                                               padding=0),
-                                    norm(self.final_chansize),
+                                    nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM),
                                     nn.ReLU(inplace=True))
         return incre_modules, downsamp_modules, final_layer
 
