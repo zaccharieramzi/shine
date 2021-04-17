@@ -2,7 +2,7 @@ GPUS: (0,1,2,3)
 LOG_DIR: 'log/'
 DATA_DIR: ''
 OUTPUT_DIR: 'output/'
-WORKERS: 4
+WORKERS: 10
 PRINT_FREQ: 1000
 
 MODEL:
