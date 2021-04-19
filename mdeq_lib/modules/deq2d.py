@@ -112,13 +112,14 @@ class DEQFunc2d(Function):
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False):
+    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False, gradient_ratio=False):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
         self.shine = shine
         self.fpn = fpn
         self.gradient_correl = gradient_correl
+        self.gradient_ratio = gradient_ratio
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
