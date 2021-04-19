@@ -352,7 +352,15 @@ class MDEQModule(nn.Module):
 
 class MDEQNet(nn.Module):
 
-    def __init__(self, cfg, shine=False, fpn=False, gradient_correl=False, **kwargs):
+    def __init__(
+            self,
+            cfg,
+            shine=False,
+            fpn=False,
+            gradient_correl=False,
+            gradient_ratio=False,
+            **kwargs,
+    ):
         """
         Build an MDEQ model with the given hyperparameters
         """
@@ -403,6 +411,7 @@ class MDEQNet(nn.Module):
             shine=shine,
             fpn=fpn,
             gradient_correl=gradient_correl,
+            gradient_ratio=gradient_ratio,
         )
         self.iodrop = VariationalHidDropout2d(0.0)
 

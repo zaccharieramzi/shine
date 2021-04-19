@@ -146,7 +146,7 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl = args[-7:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio = args[-8:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
@@ -154,9 +154,9 @@ class DEQModule2d(nn.Module):
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
             elif fpn:
                 dl_df_est = grad
-            if not(shine or fpn) or gradient_correl:
+            if not(shine or fpn) or gradient_correl or gradient_ratio:
                 # here func is the mdeq module, that is the function defining the fixed point
-                if gradient_correl:
+                if gradient_correl or gradient_ratio:
                     dl_df_est_old = dl_df_est
                 func = ctx.func
                 z1_temp = z1.clone().detach().requires_grad_()
@@ -203,14 +203,22 @@ class DEQModule2d(nn.Module):
                     )
                     scaling = torch.norm(dl_df_est) * torch.norm(dl_df_est_old)
                     correl = correl / scaling
+
+                if gradient_ratio:
+                    ratio = torch.norm(dl_df_est) / torch.norm(dl_df_est_old)
+
+                if gradient_correl or gradient_ratio:
                     # re-using the originally computed gradient to follow the
                     # accelerated method direction
                     dl_df_est = dl_df_est_old
 
                 if dl_df_est.get_device() == 0:
                     if writer is not None:
-                        if gradient_correl:
-                            writer.add_scalar('backward/correl', correl, train_step)
+                        if gradient_correl or gradient_ratio:
+                            if gradient_correl:
+                                writer.add_scalar('backward/correl', correl, train_step)
+                            if gradient_ratio:
+                                writer.add_scalar('backward/ratio', ratio, train_step)
                         else:
                             writer.add_scalar('backward/diff', result_info['diff'], train_step)
                             writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
