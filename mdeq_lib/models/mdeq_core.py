@@ -484,17 +484,15 @@ class MDEQNet(nn.Module):
         self.fullstage_copy._copy(self.fullstage)
 
         # Multiscale Deep Equilibrium!
-        curr_norm = None
         for layer_ind in range(n_iter):
             z_list = self.fullstage(z_list, x_list)
             # normalizing z is a bit involved since it's not a tensor but a list
             # of tensors
-            old_norm = curr_norm
             curr_norm = torch.sum(torch.tensor([torch.norm(elem)**2 for elem in z_list]))
             curr_norm = torch.sqrt(curr_norm)
             z_list = [elem / curr_norm for elem in z_list]
 
-        return curr_norm / old_norm
+        return curr_norm
 
 
 
