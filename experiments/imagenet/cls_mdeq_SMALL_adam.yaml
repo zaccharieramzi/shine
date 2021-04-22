@@ -68,7 +68,7 @@ TRAIN:
   - 60
   - 90
   OPTIMIZER: adam
-  LR: 0.05
+  LR: 0.001
   WD: 0.00005
   MOMENTUM: 0.9
   NESTEROV: true
