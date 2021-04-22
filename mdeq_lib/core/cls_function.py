@@ -133,7 +133,8 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
             writer.add_scalar('valid_loss', losses.avg, global_steps)
             writer.add_scalar('valid_top1', top1.avg, global_steps)
             writer_dict['valid_global_steps'] = global_steps + 1
-
+        else:
+            print('Valid accuracy', top1.avg)
     return top1.avg
 
 def validate_contractivity(val_loader, model, n_iter=20):
@@ -148,7 +149,7 @@ def validate_contractivity(val_loader, model, n_iter=20):
             output = model.power_iterations(input.cuda(), n_iter=n_iter)
             # measure accuracy and record loss
             max_eigens.update(output, 1)
-
+    print('Contract', max_eigens.avg)
     return max_eigens.avg
 
 
