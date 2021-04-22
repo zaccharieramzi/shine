@@ -465,5 +465,36 @@ class MDEQNet(nn.Module):
         y_list = self.iodrop(z_list)
         return y_list
 
+    def power_iterations(self, x, n_iter=None, **kwargs):
+        num_branches = self.num_branches
+        n_iter = n_iter if n_iter is not None else self.num_layers
+        x = self.downsample(x)
+        dev = x.device
+
+        # Inject only to the highest resolution...
+        x_list = [self.stage0(x) if self.stage0 else x]
+        for i in range(1, num_branches):
+            bsz, _, H, W = x_list[-1].shape
+            x_list.append(torch.zeros(bsz, self.num_channels[i], H//2, W//2).to(dev))   # ... and the rest are all zeros
+
+        z_list = [torch.randn_like(elem) for elem in x_list]
+
+        # For variational dropout mask resetting and weight normalization re-computations
+        self.fullstage._reset(z_list)
+        self.fullstage_copy._copy(self.fullstage)
+
+        # Multiscale Deep Equilibrium!
+        for layer_ind in range(n_iter):
+            z_list = self.fullstage(z_list, x_list)
+            # normalizing z is a bit involved since it's not a tensor but a list
+            # of tensors
+            curr_norm = torch.sum(torch.tensor([torch.norm(elem)**2 for elem in z_list]))
+            curr_norm = torch.sqrt(curr_norm)
+            z_list = [elem / curr_norm for elem in z_list]
+
+        return curr_norm
+
+
+
     def forward(self, x, train_step=-1, **kwargs):
         raise NotImplemented    # To be inherited & implemented by MDEQClsNet and MDEQSegNet (see mdeq.py)

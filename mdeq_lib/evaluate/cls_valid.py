@@ -22,7 +22,7 @@ import torchvision.transforms as transforms
 
 import mdeq_lib.models as models
 from mdeq_lib.config import config
-from mdeq_lib.core.cls_function import validate
+from mdeq_lib.core.cls_function import validate, validate_contractivity
 from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.modelsummary import get_model_summary
 from mdeq_lib.utils.utils import create_logger
@@ -36,6 +36,8 @@ def evaluate_classifier(
     fpn=False,
     n_samples=None,
     seed=0,
+    check_contract=False,
+    n_iter=20,
 ):
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -103,21 +105,28 @@ def evaluate_classifier(
 
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus),
+        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus) if not check_contract else 1,
         shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True
     )
 
     # evaluate on validation set
-    return 'top1', validate(
-        config,
-        valid_loader,
-        model,
-        criterion,
-        None,
-        None,
-        final_output_dir,
-        tb_log_dir,
-        None,
-    ).cpu().numpy()
+    if not check_contract:
+        return 'top1', validate(
+            config,
+            valid_loader,
+            model,
+            criterion,
+            None,
+            None,
+            final_output_dir,
+            tb_log_dir,
+            None,
+        ).cpu().numpy()
+    else:
+        return 'maxeigen', validate_contractivity(
+            valid_loader,
+            model.module.cuda(),
+            n_iter=n_iter,
+        ).cpu().numpy()
