@@ -54,7 +54,14 @@ def worker_init_fn(worker_id, seed=0):
     """Helper to make random number generation independent in each process."""
     np.random.seed(8*seed + worker_id)
 
-def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imagenet', model_size='SMALL'):
+def update_config_w_args(
+    n_epochs=100,
+    pretrained=False,
+    n_gpus=1,
+    dataset='imagenet',
+    model_size='SMALL',
+    use_group_norm=False,
+):
     if dataset == 'imagenet':
         data_dir = IMAGENET_DIR
     else:
@@ -63,6 +70,7 @@ def update_config_w_args(n_epochs=100, pretrained=False, n_gpus=1, dataset='imag
         'DATASET.ROOT', str(data_dir) + '/',
         'GPUS', list(range(n_gpus)),
         'TRAIN.END_EPOCH', n_epochs,
+        'MODEL.EXTRA.FULL_STAGE.GROUP_NORM', use_group_norm,
     ]
     if pretrained:
         opts += [
@@ -91,8 +99,10 @@ def train_classifier(
     shine=False,
     fpn=False,
     gradient_correl=False,
+    gradient_ratio=False,
     save_at=None,
     restart_from=None,
+    use_group_norm=False,
     seed=0,
 ):
     np.random.seed(seed)
@@ -103,13 +113,21 @@ def train_classifier(
         n_gpus=n_gpus,
         dataset=dataset,
         model_size=model_size,
+        use_group_norm=use_group_norm,
     )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'train', shine=shine, fpn=fpn, seed=seed)
+        config,
+        args.cfg,
+        'train',
+        shine=shine,
+        fpn=fpn,
+        seed=seed,
+        use_group_norm=use_group_norm,
+    )
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))
@@ -124,6 +142,7 @@ def train_classifier(
         shine=shine,
         fpn=fpn,
         gradient_correl=gradient_correl,
+        gradient_ratio=gradient_ratio,
     ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()

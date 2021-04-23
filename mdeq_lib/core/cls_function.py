@@ -99,12 +99,10 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
 
     with torch.no_grad():
         end = time.time()
-        extra_kwargs = dict(writer=writer_dict['writer']) if writer_dict is not None else {}
         for i, (input, target) in enumerate(val_loader):
             # compute output
             output = model(input,
-                           train_step=-1,       # Evaluate using MDEQ (even when pre-training)
-                           **extra_kwargs)
+                           train_step=-1)
             target = target.cuda(non_blocking=True)
 
             loss = criterion(output, target)
@@ -135,7 +133,8 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
             writer.add_scalar('valid_loss', losses.avg, global_steps)
             writer.add_scalar('valid_top1', top1.avg, global_steps)
             writer_dict['valid_global_steps'] = global_steps + 1
-
+        else:
+            print('Valid accuracy', top1.avg)
     return top1.avg
 
 def validate_contractivity(val_loader, model, n_iter=20):
@@ -150,7 +149,7 @@ def validate_contractivity(val_loader, model, n_iter=20):
             output = model.power_iterations(input.cuda(), n_iter=n_iter)
             # measure accuracy and record loss
             max_eigens.update(output, 1)
-
+    print('Contract', max_eigens.avg)
     return max_eigens.avg
 
 

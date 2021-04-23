@@ -36,6 +36,7 @@ def evaluate_classifier(
     fpn=False,
     n_samples=None,
     seed=0,
+    use_group_norm=False,
     check_contract=False,
     n_iter=20,
 ):
@@ -45,10 +46,18 @@ def evaluate_classifier(
         n_gpus=n_gpus,
         dataset=dataset,
         model_size=model_size,
+        use_group_norm=use_group_norm,
     )
 
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'valid', shine=shine, fpn=fpn, seed=seed)
+        config,
+        args.cfg,
+        'valid',
+        shine=shine,
+        fpn=fpn,
+        seed=seed,
+        use_group_norm=use_group_norm,
+    )
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))

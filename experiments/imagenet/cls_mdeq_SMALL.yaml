@@ -2,10 +2,10 @@ GPUS: (0,1,2,3)
 LOG_DIR: 'log/'
 DATA_DIR: ''
 OUTPUT_DIR: 'output/'
-WORKERS: 4
+WORKERS: 40
 PRINT_FREQ: 1000
 
-MODEL: 
+MODEL:
   NAME: mdeq
   NUM_LAYERS: 5
   NUM_CLASSES: 1000
@@ -16,7 +16,7 @@ MODEL:
   WNORM: true
   DOWNSAMPLE_TIMES: 2
   EXPANSION_FACTOR: 5
-  IMAGE_SIZE: 
+  IMAGE_SIZE:
     - 224
     - 224
   EXTRA:
@@ -41,9 +41,10 @@ MODEL:
       - 128
       - 256
       FUSE_METHOD: SUM
+      GROUP_NORM: false
 CUDNN:
-  BENCHMARK: true
-  DETERMINISTIC: false
+  BENCHMARK: false
+  DETERMINISTIC: true
   ENABLED: true
 DATASET:
   DATASET: 'imagenet'

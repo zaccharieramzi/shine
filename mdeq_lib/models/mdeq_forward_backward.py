@@ -14,13 +14,22 @@ __author__ = "shaojieb"
 
 
 class MDEQWrapper(DEQModule2d):
-    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False):
+    def __init__(
+            self,
+            func,
+            func_copy,
+            shine=False,
+            fpn=False,
+            gradient_correl=False,
+            gradient_ratio=False,
+    ):
         super(MDEQWrapper, self).__init__(
             func,
             func_copy,
             shine=shine,
             fpn=fpn,
             gradient_correl=gradient_correl,
+            gradient_ratio=gradient_ratio,
         )
 
     def forward(self, z1, u, **kwargs):
@@ -49,6 +58,7 @@ class MDEQWrapper(DEQModule2d):
                 self.shine,
                 self.fpn,
                 self.gradient_correl,
+                self.gradient_ratio,
             )
             new_z1 = DEQFunc2d.vec2list(new_z1, cutoffs)
         return new_z1
