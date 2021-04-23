@@ -86,6 +86,7 @@ def create_logger(
     phase='train',
     shine=False,
     fpn=False,
+    adjoint_broyden=False,
     seed=0,
     use_group_norm=False,
 ):
@@ -104,6 +105,8 @@ def create_logger(
         cfg_name += '_fpn'
     if use_group_norm:
         cfg_name += '_gn'
+    if adjoint_broyden:
+        cfg_name += '_adjbroyden'
     cfg_name += f'_{seed}'
 
     final_output_dir = root_output_dir / dataset / cfg_name
