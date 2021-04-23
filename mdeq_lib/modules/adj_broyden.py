@@ -86,8 +86,19 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
         # a = An^{-1} sigma
         a = matvec(part_Us, part_VTs, sigma)
         # b = sigma^T g'(xn) An^{-1}
-        b = # TODO: backprop on g
+        #######
+        # Backprop on g
+        #######
+        x_temp = x_est.clone().detach().requires_grad_()
+        with torch.enable_grad():
+            # NOTE: this extra call might be potentially costly
+            # we could think of a way to do it in the line search, let's see
+            y = g(x_temp)
+        y.backward(sigma)
+        b = x_temp.grad
+        #######
         b = rmatvec(part_Us, part_VTs, b)
+        x_temp.grad.zero_()
         # c = (sigma - b) / (b^T sigma)
         c = (sigma - b) / torch.einsum('bij, bij -> b', b, sigma)[:, None, None]
         # these next 2 assignments allow us to get back to the original writing of
