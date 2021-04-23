@@ -22,6 +22,7 @@ class MDEQWrapper(DEQModule2d):
             fpn=False,
             gradient_correl=False,
             gradient_ratio=False,
+            adjoint_broyden=False,
     ):
         super(MDEQWrapper, self).__init__(
             func,
@@ -30,6 +31,7 @@ class MDEQWrapper(DEQModule2d):
             fpn=fpn,
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
+            adjoint_broyden=adjoint_broyden,
         )
 
     def forward(self, z1, u, **kwargs):
@@ -40,7 +42,15 @@ class MDEQWrapper(DEQModule2d):
         if u is None:
             raise ValueError("Input injection is required.")
 
-        forward_out = DEQFunc2d.apply(self.func, z1, u, threshold, train_step, writer)
+        forward_out = DEQFunc2d.apply(
+            self.func,
+            z1,
+            u,
+            threshold,
+            train_step,
+            writer,
+            adjoint=self.adjoint_broyden,
+        )
         new_z1 = list(forward_out[:-3])
         # qN_tensors = (Us, VTs, nstep)
         qN_tensors = forward_out[-3:]

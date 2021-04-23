@@ -18,6 +18,7 @@ import time
 from termcolor import colored
 import copy
 from mdeq_lib.modules.broyden import broyden, analyze_broyden, rmatvec
+from mdeq_lib.modules.adj_broyden import adj_broyden
 from tqdm import tqdm
 
 import logging
@@ -60,14 +61,17 @@ class DEQFunc2d(Function):
         return z1_list
 
     @staticmethod
-    def broyden_find_root(func, z1, u, eps, *args):
+    def broyden_find_root(func, z1, u, eps, *args, adjoint=False):
         bsz = z1[0].size(0)
         z1_est = DEQFunc2d.list2vec(z1)
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
         threshold, train_step, writer = args[-3:]
 
         g = lambda x: DEQFunc2d.g(func, x, u, cutoffs, *args)
-        result_info = broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
+        if adjoint:
+            result_info = adj_broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
+        else:
+            result_info = broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
         z1_est = result_info['result']
         nstep = result_info['nstep']
         lowest_step = result_info['lowest_step']
@@ -91,12 +95,12 @@ class DEQFunc2d(Function):
         return DEQFunc2d.vec2list(z1_est.clone().detach(), cutoffs), result_info
 
     @staticmethod
-    def forward(ctx, func, z1, u, *args):
+    def forward(ctx, func, z1, u, *args, adjoint=False):
         nelem = sum([elem.nelement() for elem in z1])
         eps = 1e-5 * np.sqrt(nelem)
         ctx.args_len = len(args)
         with torch.no_grad():
-            z1_est, result_info = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args)  # args include pos_emb, threshold, train_step
+            z1_est, result_info = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args, adjoint=adjoint)  # args include pos_emb, threshold, train_step
             Us = result_info['Us']
             VTs = result_info['VTs']
             nstep = result_info['lowest_step']
@@ -108,11 +112,20 @@ class DEQFunc2d(Function):
     @staticmethod
     def backward(ctx, grad_z1, _grad_qN_tensors):
         grad_args = [None for _ in range(ctx.args_len)]
-        return (None, grad_z1, None, *grad_args)
+        return (None, grad_z1, None, *grad_args, None)
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False, gradient_ratio=False):
+    def __init__(
+        self,
+        func,
+        func_copy,
+        shine=False,
+        fpn=False,
+        gradient_correl=False,
+        gradient_ratio=False,
+        adjoint_broyden=False,
+    ):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
@@ -120,6 +133,7 @@ class DEQModule2d(nn.Module):
         self.fpn = fpn
         self.gradient_correl = gradient_correl
         self.gradient_ratio = gradient_ratio
+        self.adjoint_broyden = adjoint_broyden
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
