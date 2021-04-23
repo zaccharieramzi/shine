@@ -1,0 +1,160 @@
+# Modified based on the DEQ repo.
+
+import torch
+from torch import nn
+import torch.nn.functional as functional
+from torch.autograd import Function
+import numpy as np
+import pickle
+import sys
+import os
+from scipy.optimize import root
+import time
+from termcolor import colored
+
+
+from mdeq_lib.modules.broyden import _safe_norm, scalar_search_armijo, matvec, rmatvec, line_search
+
+
+def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
+    """Adjoint Broyden method
+
+    Parameters:
+        - g (fun): the root defining function
+        - x0 (torch.Tensor): the initial estimate for the root
+        - threshold (int): the maximum number of vectors to store for the Broyden matrix
+        - eps (float): the tolerance
+        - ls (bool): whether to perform line search. False by default and in practice.
+        - name (str): tag to check whether you are in forward or backward mode.
+        - adj_type (str): whether to use the B or C type update from the paper
+            "On the local convergence of adjoint Broyden methods" Schlenkrich et al. 2010
+            Definition (3). For now only 'C' is implemented, the adjoint Broyden residual update.
+    """
+    bsz, total_hsize, n_elem = x0.size()
+    dev = x0.device
+
+    x_est = x0           # (bsz, 2d, L')
+    gx = g(x_est)        # (bsz, 2d, L')
+    nstep = 0
+    tnstep = 0
+    LBFGS_thres = min(threshold, 27)
+
+    # For fast calculation of inv_jacobian (approximately)
+    Us = torch.zeros(bsz, total_hsize, n_elem, LBFGS_thres).to(dev)
+    VTs = torch.zeros(bsz, LBFGS_thres, total_hsize, n_elem).to(dev)
+    update = -gx
+    new_objective = init_objective = torch.norm(gx).item()
+    prot_break = False
+    trace = [init_objective]
+    new_trace = [-1]
+
+    # To be used in protective breaks
+    protect_thres = 1e6 * n_elem
+    lowest = new_objective
+    lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
+
+    while new_objective >= eps and nstep < threshold:
+        x_est, gx, delta_x, delta_gx, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls)
+        nstep += 1
+        tnstep += (ite+1)
+        new_objective = torch.norm(gx).item()
+        trace.append(new_objective)
+        try:
+            new2_objective = torch.norm(delta_x).item() / (torch.norm(x_est - delta_x).item())   # Relative residual
+        except:
+            new2_objective = torch.norm(delta_x).item() / (torch.norm(x_est - delta_x).item() + 1e-9)
+        new_trace.append(new2_objective)
+        if new_objective < lowest:
+            lowest_xest, lowest_gx = x_est.clone().detach(), gx.clone().detach()
+            lowest = new_objective
+            lowest_step = nstep
+        if new_objective < eps:
+            break
+        if new_objective < 3*eps and nstep > 30 and np.max(trace[-30:]) / np.min(trace[-30:]) < 1.3:
+            # if there's hardly been any progress in the last 30 steps
+            break
+        if new_objective > init_objective * protect_thres:
+            prot_break = True
+            break
+
+        # this is the part that changes between Broyden and Adjoint Broyden
+        if adj_type != 'C':
+            raise NotImplementedError('Use adj_type C for now')
+        else:
+            sigma = gx
+        part_Us, part_VTs = Us[:,:,:,:(nstep-1)], VTs[:,:(nstep-1)]
+        # a = An^{-1} sigma
+        a = matvec(part_Us, part_VTs, sigma)
+        # b = sigma^T g'(xn) An^{-1}
+        b = # TODO: backprop on g
+        b = rmatvec(part_Us, part_VTs, b)
+        # c = (sigma - b) / (b^T sigma)
+        c = (sigma - b) / torch.einsum('bij, bij -> b', b, sigma)[:, None, None]
+        # these next 2 assignments allow us to get back to the original writing of
+        # broyden by Shaojie
+        u = a
+        vT = c
+        vT[vT != vT] = 0
+        u[u != u] = 0
+        VTs[:,(nstep-1) % LBFGS_thres] = vT
+        Us[:,:,:,(nstep-1) % LBFGS_thres] = u
+        update = -matvec(Us[:,:,:,:nstep], VTs[:,:nstep], gx)
+
+    # NOTE: why was this present originally? is it a question of memory?
+    # Us, VTs = None, None
+    return {"result": lowest_xest,
+            "nstep": nstep,
+            "tnstep": tnstep,
+            "lowest_step": lowest_step,
+            "diff": torch.norm(lowest_gx).item(),
+            "diff_detail": torch.norm(lowest_gx, dim=1),
+            "prot_break": prot_break,
+            "trace": trace,
+            "new_trace": new_trace,
+            "eps": eps,
+            "threshold": threshold,
+            "Us": Us,
+            "VTs": VTs}
+
+
+def analyze_broyden(res_info, err=None, judge=True, name='forward', training=True, save_err=True):
+    """
+    For debugging use only :-)
+    """
+    res_est = res_info['result']
+    nstep = res_info['nstep']
+    diff = res_info['diff']
+    diff_detail = res_info['diff_detail']
+    prot_break = res_info['prot_break']
+    trace = res_info['trace']
+    eps = res_info['eps']
+    threshold = res_info['threshold']
+    if judge:
+        return nstep >= threshold or (nstep == 0 and (diff != diff or diff > eps)) or prot_break or torch.isnan(res_est).any()
+
+    assert (err is not None), "Must provide err information when not in judgment mode"
+    prefix, color = ('', 'red') if name == 'forward' else ('back_', 'blue')
+    eval_prefix = '' if training else 'eval_'
+
+    # Case 1: A nan entry is produced in Broyden
+    if torch.isnan(res_est).any():
+        msg = colored(f"WARNING: nan found in Broyden's {name} result. Diff: {diff}", color)
+        print(msg)
+        if save_err: pickle.dump(err, open(f'{prefix}{eval_prefix}nan.pkl', 'wb'))
+        return (1, msg, res_info)
+
+    # Case 2: Unknown problem with Broyden's method (probably due to nan update(s) to the weights)
+    if nstep == 0 and (diff != diff or diff > eps):
+        msg = colored(f"WARNING: Bad Broyden's method {name}. Why?? Diff: {diff}. STOP.", color)
+        print(msg)
+        if save_err: pickle.dump(err, open(f'{prefix}{eval_prefix}badbroyden.pkl', 'wb'))
+        return (2, msg, res_info)
+
+    # Case 3: Protective break during Broyden (so that it does not diverge to infinity)
+    if prot_break and np.random.uniform(0,1) < 0.05:
+        msg = colored(f"WARNING: Hit Protective Break in {name}. Diff: {diff}. Total Iter: {len(trace)}", color)
+        print(msg)
+        if save_err: pickle.dump(err, open(f'{prefix}{eval_prefix}prot_break.pkl', 'wb'))
+        return (3, msg, res_info)
+
+    return (-1, '', res_info)
