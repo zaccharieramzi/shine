@@ -93,8 +93,8 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
         with torch.enable_grad():
             # NOTE: this extra call might be potentially costly
             # we could think of a way to do it in the line search, let's see
-            y = g(x_temp, retain_graph=True)
-        y.backward(sigma)
+            y = g(x_temp)
+        y.backward(sigma, retain_graph=True)
         b = x_temp.grad
         #######
         b = rmatvec(part_Us, part_VTs, b)
