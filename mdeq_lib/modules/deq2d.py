@@ -95,10 +95,10 @@ class DEQFunc2d(Function):
         return DEQFunc2d.vec2list(z1_est.clone().detach(), cutoffs), result_info
 
     @staticmethod
-    def forward(ctx, func, z1, u, *args, adjoint=False):
+    def forward(ctx, func, z1, u, adjoint, *args):
         nelem = sum([elem.nelement() for elem in z1])
         eps = 1e-5 * np.sqrt(nelem)
-        ctx.args_len = len(args)
+        ctx.args_len = len(args) + 1
         with torch.no_grad():
             z1_est, result_info = DEQFunc2d.broyden_find_root(func, z1, u, eps, *args, adjoint=adjoint)  # args include pos_emb, threshold, train_step
             Us = result_info['Us']

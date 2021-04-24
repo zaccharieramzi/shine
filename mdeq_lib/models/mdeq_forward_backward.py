@@ -46,10 +46,10 @@ class MDEQWrapper(DEQModule2d):
             self.func,
             z1,
             u,
+            self.adjoint_broyden,
             threshold,
             train_step,
             writer,
-            adjoint=self.adjoint_broyden,
         )
         new_z1 = list(forward_out[:-3])
         # qN_tensors = (Us, VTs, nstep)
