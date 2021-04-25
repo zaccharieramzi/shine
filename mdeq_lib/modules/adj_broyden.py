@@ -54,7 +54,10 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
 
     while new_objective >= eps and nstep < threshold:
-        x_est, gx, delta_x, delta_gx, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls)
+        x_est, delta_x, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls, compute_g=False)
+        x_temp = x_est.clone().detach().requires_grad_()
+        with torch.enable_grad():
+            gx = g(x_temp)
         nstep += 1
         tnstep += (ite+1)
         new_objective = torch.norm(gx).item()
@@ -89,18 +92,13 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
         #######
         # Backprop on g
         #######
-        x_temp = x_est.clone().detach().requires_grad_()
-        with torch.enable_grad():
-            # NOTE: this extra call might be potentially costly
-            # we could think of a way to do it in the line search, let's see
-            y = g(x_temp)
-        y.backward(sigma, retain_graph=True)
+        gx.backward(sigma, retain_graph=True)
         b = x_temp.grad
         #######
         b = rmatvec(part_Us, part_VTs, b)
-        x_temp.grad.zero_()
         # c = (sigma - b) / (b^T sigma)
         c = (sigma - b) / torch.einsum('bij, bij -> b', b, sigma)[:, None, None]
+        x_temp.grad.zero_()
         # these next 2 assignments allow us to get back to the original writing of
         # broyden by Shaojie
         u = a
