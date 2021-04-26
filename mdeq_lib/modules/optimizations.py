@@ -137,8 +137,7 @@ class WeightNorm(object):
         pass
 
 def reset_wn(wn, module):
-    for name in wn.names:
-        setattr(module, name, wn.compute_weight(module, name))
+    setattr(module, wn.name, wn.compute_weight(module, wn.name))
 
 def weight_norm(module, names, dim=0):
     fn = WeightNorm.apply(module, names, dim)
