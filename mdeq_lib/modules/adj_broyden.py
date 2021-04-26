@@ -92,7 +92,7 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
         #######
         # Backprop on g
         #######
-        gx.backward(sigma, retain_graph=True)
+        gx.backward(sigma, retain_graph=False)
         b = x_temp.grad
         #######
         b = rmatvec(part_Us, part_VTs, b)
