@@ -17,7 +17,7 @@ import torch._utils
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import WeightNorm
 
-from mdeq_lib.modules.optimizations import VariationalHidDropout2d
+from mdeq_lib.modules.optimizations import VariationalHidDropout2d, reset_wn
 from mdeq_lib.modules.deq2d import *
 from mdeq_lib.models.mdeq_forward_backward import MDEQWrapper
 
@@ -68,9 +68,9 @@ class BasicBlock(nn.Module):
 
     def _reset(self, x):
         if 'conv1_fn' in self.__dict__:
-            self.conv1_fn.reset(self.conv1)
+            reset_wn(self.conv1_fn, self.conv1)
         if 'conv2_fn' in self.__dict__:
-            self.conv2_fn.reset(self.conv2)
+            reset_wn(self.conv2_fn, self.conv2)
         self.drop.reset_mask(x)
 
     def _copy(self, other):
@@ -277,7 +277,7 @@ class MDEQModule(nn.Module):
             for block in branch.blocks:
                 block._reset(xs[i])
             if 'post_fuse_fns' in self.__dict__:
-                self.post_fuse_fns[i].reset(self.post_fuse_layers[i].conv)    # Re-compute (...).conv.weight using _g and _v
+                reset_wn(self.post_fuse_fns[i], self.post_fuse_layers[i].conv)    # Re-compute (...).conv.weight using _g and _v
 
     def _make_one_branch(self, branch_index, block, num_blocks, num_channels, stride=1, dropout=0.0):
         layers = nn.ModuleList()
