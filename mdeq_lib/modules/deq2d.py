@@ -66,8 +66,12 @@ class DEQFunc2d(Function):
         z1_est = DEQFunc2d.list2vec(z1)
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
         threshold, train_step, writer = args[-3:]
+        if adjoint:
+            new_u = [elem.clone().detach() for elem in u]
+        else:
+            new_u = u
 
-        g = lambda x: DEQFunc2d.g(func, x, u, cutoffs, *args)
+        g = lambda x: DEQFunc2d.g(func, x, new_u, cutoffs, *args)
         if adjoint:
             result_info = adj_broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
         else:
