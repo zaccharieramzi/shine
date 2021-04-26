@@ -15,8 +15,9 @@ import torch
 import torch.nn as nn
 import torch._utils
 import torch.nn.functional as F
+from torch.nn.utils.weight_norm import WeightNorm
 
-from mdeq_lib.modules.optimizations import *
+from mdeq_lib.modules.optimizations import VariationalHidDropout2d
 from mdeq_lib.modules.deq2d import *
 from mdeq_lib.models.mdeq_forward_backward import MDEQWrapper
 
@@ -62,8 +63,8 @@ class BasicBlock(nn.Module):
         if wnorm: self._wnorm()
 
     def _wnorm(self):
-        self.conv1, self.conv1_fn = weight_norm(self.conv1, names=['weight'], dim=0)
-        self.conv2, self.conv2_fn = weight_norm(self.conv2, names=['weight'], dim=0)
+        self.conv1_fn = WeightNorm.apply(self.conv1, name='weight', dim=0)
+        self.conv2_fn = WeightNorm.apply(self.conv2, name='weight', dim=0)
 
     def _reset(self, x):
         if 'conv1_fn' in self.__dict__:
@@ -240,9 +241,8 @@ class MDEQModule(nn.Module):
         for i, branch in enumerate(self.branches):
             for block in branch.blocks:
                 block._wnorm()
-            conv, fn = weight_norm(self.post_fuse_layers[i].conv, names=['weight'], dim=0)
+            fn = WeightNorm.apply(self.post_fuse_layers[i].conv, name='weight', dim=0)
             self.post_fuse_fns.append(fn)
-            self.post_fuse_layers[i].conv = conv
 
         # Throw away garbage
         torch.cuda.empty_cache()
