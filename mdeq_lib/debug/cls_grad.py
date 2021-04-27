@@ -270,7 +270,7 @@ def train_classifier(
     model.f_thres = 30
     model.deq.shine = False
     model.deq.fpn = False
-    output = model(input, train_step=-1, writer=None)
+    output = model(input.cuda(), train_step=-1, writer=None)
     target = target.cuda(non_blocking=True)
 
     loss = criterion(output, target)
