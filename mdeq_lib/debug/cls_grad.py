@@ -224,7 +224,7 @@ def train_classifier(
         batch_size=32,
         shuffle=True,
         num_workers=0,
-        pin_memory=True,
+        pin_memory=False,
         worker_init_fn=partial(worker_init_fn, seed=seed),
     )
 
