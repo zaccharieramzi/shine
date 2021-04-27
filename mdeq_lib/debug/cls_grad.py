@@ -242,7 +242,7 @@ def train_classifier(
                 optimizer, config.TRAIN.LR_STEP, config.TRAIN.LR_FACTOR,
                 last_epoch-1)
     # train for one epoch
-    input, target = next(train_loader)
+    input, target = next(iter(train_loader))
     model.train()
     if shine:
         accel_grad_name = 'shine'
