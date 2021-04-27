@@ -7,6 +7,7 @@ from __future__ import print_function
 import argparse
 import os
 import sys
+import random
 import shutil
 import pprint
 
@@ -40,6 +41,7 @@ def evaluate_classifier(
     check_contract=False,
     n_iter=20,
 ):
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     args = update_config_w_args(
