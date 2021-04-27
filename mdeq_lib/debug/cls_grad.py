@@ -262,7 +262,8 @@ def train_classifier(
         # from https://discuss.pytorch.org/t/get-the-gradient-of-the-network-parameters/50575/2
         grads = []
         for param in model.parameters():
-            grads.append(param.grad.view(-1))
+            if param.grad is not None:
+                grads.append(param.grad.view(-1))
         grads = torch.cat(grads)
         torch.save(grads, accel_grad_name.format(f_thres))
 
