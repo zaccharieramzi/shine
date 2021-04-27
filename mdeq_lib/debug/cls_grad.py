@@ -251,7 +251,7 @@ def train_classifier(
     accel_grad_name += '_grad_{0}.pt'
     for f_thres in range(2, 200):
         model.f_thres = f_thres
-        output = model(input, train_step=-1, writer=None)
+        output = model(input.cuda(), train_step=-1, writer=None)
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
