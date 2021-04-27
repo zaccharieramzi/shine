@@ -280,6 +280,7 @@ def train_classifier(
     loss.backward()
     grads = []
     for param in model.parameters():
-        grads.append(param.grad.view(-1))
+        if param.grad is not None:
+            grads.append(param.grad.view(-1))
     grads = torch.cat(grads)
     torch.save(grads, 'orig_grad.pt')
