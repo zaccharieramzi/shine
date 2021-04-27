@@ -9,6 +9,7 @@ from functools import partial
 from collections import namedtuple
 from pathlib import Path
 import pprint
+import random
 import shutil
 import sys
 
@@ -105,6 +106,7 @@ def train_classifier(
     use_group_norm=False,
     seed=0,
 ):
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     args = update_config_w_args(
