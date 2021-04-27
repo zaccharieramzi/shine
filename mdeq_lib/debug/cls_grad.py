@@ -270,6 +270,8 @@ def train_classifier(
     model.f_thres = 30
     model.deq.shine = False
     model.deq.fpn = False
+    model.deq.gradient_ratio = False
+    model.deq.gradient_correl = False
     output = model(input.cuda(), train_step=-1, writer=None)
     target = target.cuda(non_blocking=True)
 
