@@ -253,6 +253,10 @@ def train_classifier(
         input, target = next(data_iter)
         model.train()
         if compute_partial:
+            model.deq.shine = shine
+            model.deq.fpn = fpn
+            model.deq.gradient_ratio = gradient_ratio
+            model.deq.gradient_correl = gradient_correl
             if shine:
                 accel_grad_name = 'shine'
             elif fpn:
@@ -284,7 +288,7 @@ def train_classifier(
             model.deq.gradient_correl = False
             for f_thres in f_thres_range:
                 model.f_thres = f_thres
-                output = model(input.cuda(), train_step=-1, writer=None)
+                output = model(input.cuda(), train_step=-(i_data+1), writer=None)
                 target = target.cuda(non_blocking=True)
 
                 loss = criterion(output, target)
