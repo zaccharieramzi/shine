@@ -101,7 +101,7 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
         end = time.time()
         for i, (input, target) in enumerate(val_loader):
             # compute output
-            output = model(input,
+            output = model(input.cuda(),
                            train_step=-1)
             target = target.cuda(non_blocking=True)
 
