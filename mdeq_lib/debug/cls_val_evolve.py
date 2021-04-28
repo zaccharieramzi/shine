@@ -283,3 +283,5 @@ def train_classifier(
             lr_scheduler.step()
         torch.cuda.empty_cache()
         perf_indicator = validate(config, valid_loader, model, criterion, None, None, None, None, None, topk=(1,))
+        val_perfs.append(perf_indicator)
+    torch.save(torch.tensor(val_perfs), 'val_perfs.pt')
