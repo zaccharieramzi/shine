@@ -150,9 +150,13 @@ class DEQModule2d(nn.Module):
             threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio = args[-8:]
             Us, VTs, nstep = qN_tensors
             if shine:
-                # TODO: allow to use Us and VTs as initialization for the backward
-
-                dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+                dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
+                # This implements a fallback in case our inverse approximation
+                # is completely off.
+                # This hardcoded value should be changed at some point to a config
+                # value
+                if torch.norm(dl_df_est) > 0.3:
+                    dl_df_est = grad
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio:
