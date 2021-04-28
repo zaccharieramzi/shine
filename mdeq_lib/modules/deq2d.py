@@ -155,7 +155,7 @@ class DEQModule2d(nn.Module):
                 # is completely off.
                 # This hardcoded value should be changed at some point to a config
                 # value
-                if torch.norm(dl_df_est) > 0.3:
+                if torch.norm(dl_df_est) > 1.:
                     dl_df_est = grad
             elif fpn:
                 dl_df_est = grad
