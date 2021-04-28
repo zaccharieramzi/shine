@@ -153,6 +153,10 @@ class DEQModule2d(nn.Module):
                 # TODO: allow to use Us and VTs as initialization for the backward
 
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+                # This implements a fallback in case our inverse approximation
+                # is completely off.
+                # This hardcoded value should be changed at some point to a config
+                # value
                 if torch.norm(dl_df_est) > 0.3:
                     dl_df_est = grad
             elif fpn:
