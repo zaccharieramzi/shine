@@ -269,22 +269,24 @@ def train_classifier(
         grads = torch.cat(grads)
         torch.save(grads, accel_grad_name.format(f_thres))
 
-    model.f_thres = 30
+    # model.f_thres = 30
     model.deq.shine = False
     model.deq.fpn = False
     model.deq.gradient_ratio = False
     model.deq.gradient_correl = False
-    output = model(input.cuda(), train_step=-1, writer=None)
-    target = target.cuda(non_blocking=True)
+    for f_thres in range(2, 200):
+        model.f_thres = f_thres
+        output = model(input.cuda(), train_step=-1, writer=None)
+        target = target.cuda(non_blocking=True)
 
-    loss = criterion(output, target)
+        loss = criterion(output, target)
 
-    # compute gradient and do update step
-    optimizer.zero_grad()
-    loss.backward()
-    grads = []
-    for param in model.parameters():
-        if param.grad is not None:
-            grads.append(param.grad.view(-1))
-    grads = torch.cat(grads)
-    torch.save(grads, 'orig_grad.pt')
+        # compute gradient and do update step
+        optimizer.zero_grad()
+        loss.backward()
+        grads = []
+        for param in model.parameters():
+            if param.grad is not None:
+                grads.append(param.grad.view(-1))
+        grads = torch.cat(grads)
+        torch.save(grads, f'orig_grad_{f_thres}.pt')
