@@ -155,7 +155,7 @@ class DEQModule2d(nn.Module):
                 # is completely off.
                 # This hardcoded value should be changed at some point to a config
                 # value
-                if torch.norm(dl_df_est) > 0.3:
+                if torch.norm(dl_df_est) > 1.:
                     dl_df_est = grad
             elif fpn:
                 dl_df_est = grad
@@ -191,7 +191,7 @@ class DEQModule2d(nn.Module):
                 eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
                 dl_df_est = torch.zeros_like(grad)
 
-                result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
+                result_info = broyden(g, dl_df_est, threshold=30, eps=eps, name="backward")
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
                 # which is why it's called dl / df where f is the function f of the
@@ -208,6 +208,9 @@ class DEQModule2d(nn.Module):
                     )
                     scaling = torch.norm(dl_df_est) * torch.norm(dl_df_est_old)
                     correl = correl / scaling
+                    accel_meth_name = 'shine' if shine else 'fpn'
+                    torch.save(dl_df_est_old, f'{accel_meth_name}_partial_grad_{threshold}_{-train_step}.pt')
+                    torch.save(dl_df_est, f'partial_grad_{threshold}_{-train_step}.pt')
 
                 if gradient_ratio:
                     ratio = torch.norm(dl_df_est) / torch.norm(dl_df_est_old)
