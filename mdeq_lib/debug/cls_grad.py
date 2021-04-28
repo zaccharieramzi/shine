@@ -105,6 +105,8 @@ def train_classifier(
     restart_from=None,
     use_group_norm=False,
     seed=0,
+    compute_partial=True,
+    compute_total=True,
 ):
     random.seed(seed)
     np.random.seed(seed)
@@ -246,47 +248,49 @@ def train_classifier(
     # train for one epoch
     input, target = next(iter(train_loader))
     model.train()
-    if shine:
-        accel_grad_name = 'shine'
-    elif fpn:
-        accel_grad_name = 'fpn'
-    accel_grad_name += '_grad_{0}.pt'
-    for f_thres in range(2, 200):
-        model.f_thres = f_thres
-        output = model(input.cuda(), train_step=-1, writer=None)
-        target = target.cuda(non_blocking=True)
+    if compute_partial:
+        if shine:
+            accel_grad_name = 'shine'
+        elif fpn:
+            accel_grad_name = 'fpn'
+        accel_grad_name += '_grad_{0}.pt'
+        for f_thres in range(2, 200):
+            model.f_thres = f_thres
+            output = model(input.cuda(), train_step=-1, writer=None)
+            target = target.cuda(non_blocking=True)
 
-        loss = criterion(output, target)
+            loss = criterion(output, target)
 
-        # compute gradient and do update step
-        optimizer.zero_grad()
-        loss.backward()
-        # from https://discuss.pytorch.org/t/get-the-gradient-of-the-network-parameters/50575/2
-        grads = []
-        for param in model.parameters():
-            if param.grad is not None:
-                grads.append(param.grad.view(-1))
-        grads = torch.cat(grads)
-        torch.save(grads, accel_grad_name.format(f_thres))
+            # compute gradient and do update step
+            optimizer.zero_grad()
+            loss.backward()
+            # from https://discuss.pytorch.org/t/get-the-gradient-of-the-network-parameters/50575/2
+            grads = []
+            for param in model.parameters():
+                if param.grad is not None:
+                    grads.append(param.grad.view(-1))
+            grads = torch.cat(grads)
+            torch.save(grads, accel_grad_name.format(f_thres))
 
-    # model.f_thres = 30
-    model.deq.shine = False
-    model.deq.fpn = False
-    model.deq.gradient_ratio = False
-    model.deq.gradient_correl = False
-    for f_thres in range(2, 200):
-        model.f_thres = f_thres
-        output = model(input.cuda(), train_step=-1, writer=None)
-        target = target.cuda(non_blocking=True)
+    if compute_total:
+        # model.f_thres = 30
+        model.deq.shine = False
+        model.deq.fpn = False
+        model.deq.gradient_ratio = False
+        model.deq.gradient_correl = False
+        for f_thres in range(2, 200):
+            model.f_thres = f_thres
+            output = model(input.cuda(), train_step=-1, writer=None)
+            target = target.cuda(non_blocking=True)
 
-        loss = criterion(output, target)
+            loss = criterion(output, target)
 
-        # compute gradient and do update step
-        optimizer.zero_grad()
-        loss.backward()
-        grads = []
-        for param in model.parameters():
-            if param.grad is not None:
-                grads.append(param.grad.view(-1))
-        grads = torch.cat(grads)
-        torch.save(grads, f'orig_grad_{f_thres}.pt')
+            # compute gradient and do update step
+            optimizer.zero_grad()
+            loss.backward()
+            grads = []
+            for param in model.parameters():
+                if param.grad is not None:
+                    grads.append(param.grad.view(-1))
+            grads = torch.cat(grads)
+            torch.save(grads, f'orig_grad_{f_thres}.pt')
