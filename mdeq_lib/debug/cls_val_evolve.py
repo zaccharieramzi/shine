@@ -248,7 +248,7 @@ def train_classifier(
         batch_size=32,
         shuffle=False,
         num_workers=0,
-        pin_memory=True,
+        pin_memory=False,
     )
 
     # Learning rate scheduler
