@@ -205,8 +205,8 @@ class DEQModule2d(nn.Module):
                     scaling = torch.norm(dl_df_est) * torch.norm(dl_df_est_old)
                     correl = correl / scaling
                     accel_meth_name = 'shine' if shine else 'fpn'
-                    torch.save(dl_df_est_old, f'{accel_meth_name}_partial_grad_{threshold}.pt')
-                    torch.save(dl_df_est, f'partial_grad_{threshold}.pt')
+                    torch.save(dl_df_est_old, f'{accel_meth_name}_partial_grad_{threshold}_{-train_step}.pt')
+                    torch.save(dl_df_est, f'partial_grad_{threshold}_{-train_step}.pt')
 
                 if gradient_ratio:
                     ratio = torch.norm(dl_df_est) / torch.norm(dl_df_est_old)
