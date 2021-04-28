@@ -257,7 +257,7 @@ def train_classifier(
                 accel_grad_name = 'shine'
             elif fpn:
                 accel_grad_name = 'fpn'
-            accel_grad_name += '_grad_{0}_{i_data+1}.pt'
+            accel_grad_name += '_grad_{0}_{1}.pt'
             for f_thres in f_thres_range:
                 model.f_thres = f_thres
                 output = model(input.cuda(), train_step=-(i_data+1), writer=None)
@@ -274,7 +274,7 @@ def train_classifier(
                     if param.grad is not None:
                         grads.append(param.grad.view(-1))
                 grads = torch.cat(grads)
-                torch.save(grads, accel_grad_name.format(f_thres))
+                torch.save(grads, accel_grad_name.format(f_thres, i_data+1))
 
         if compute_total:
             # model.f_thres = 30
