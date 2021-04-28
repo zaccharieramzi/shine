@@ -246,6 +246,8 @@ def train_classifier(
                 last_epoch-1)
     # train for one epoch
     data_iter = iter(train_loader)
+    if not gradient_correl:
+        raise ValueError('should be on')
     model.train()
     for i_data in range(n_iter):
         input, target = next(data_iter)
