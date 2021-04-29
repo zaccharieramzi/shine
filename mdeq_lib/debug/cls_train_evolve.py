@@ -162,6 +162,8 @@ def train_classifier(
 
     writer_dict = None
 
+    gpus = list(config.GPUS)
+    model = nn.DataParallel(model, device_ids=gpus).cuda()
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
@@ -223,10 +225,10 @@ def train_classifier(
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=32,
+        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
         shuffle=True,
-        num_workers=0,
-        pin_memory=False,
+        num_workers=config.WORKERS,
+        pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
     )
 
@@ -250,7 +252,7 @@ def train_classifier(
     model.train()
     for i_data in range(n_iter):
         input, target = next(data_iter)
-        output = model(input.cuda(), train_step=-(i_data+1), writer=None)
+        output = model(input, train_step=-(i_data+1), writer=None)
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
