@@ -268,5 +268,11 @@ def train_classifier(
         new_output = model(input.cuda(), train_step=-(i_data+1), writer=None)
         new_loss = criterion(new_output, target)
         losses_after.append(new_loss.clone().detach())
-    torch.save(torch.tensor(losses_before), 'losses_before.pt')
-    torch.save(torch.tensor(losses_after), 'losses_after.pt')
+    if shine:
+        method = 'shine'
+    elif fpn:
+        method = 'fpn'
+    else:
+        method = 'orig'
+    torch.save(torch.tensor(losses_before), f'{method}_losses_before.pt')
+    torch.save(torch.tensor(losses_after), f'{method}_losses_after.pt')
