@@ -133,9 +133,11 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
     if init_tensors is None:
         Us = torch.zeros(bsz, total_hsize, n_elem, LBFGS_thres).to(dev)
         VTs = torch.zeros(bsz, LBFGS_thres, total_hsize, n_elem).to(dev)
+        orig_n_step = 0
     else:
         Us, VTs, nstep = init_tensors
         threshold = threshold + nstep
+        orig_n_step = nstep
     update = -matvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], gx)
     new_objective = init_objective = torch.norm(gx).item()
     prot_break = False
@@ -183,9 +185,9 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
     # NOTE: why was this present originally? is it a question of memory?
     # Us, VTs = None, None
     return {"result": lowest_xest,
-            "nstep": nstep,
+            "nstep": nstep - orig_n_step,
             "tnstep": tnstep,
-            "lowest_step": lowest_step,
+            "lowest_step": lowest_step - orig_n_step,
             "diff": torch.norm(lowest_gx).item(),
             "diff_detail": torch.norm(lowest_gx, dim=1),
             "prot_break": prot_break,
