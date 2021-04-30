@@ -475,7 +475,14 @@ class MDEQNet(nn.Module):
         else:
             if train_step == self.pretrain_steps:
                 torch.cuda.empty_cache()
-            z_list = self.deq(z_list, x_list, threshold=f_thres, train_step=train_step, writer=writer)
+            z_list = self.deq(
+                z_list,
+                x_list,
+                threshold=f_thres,
+                train_step=train_step,
+                writer=writer,
+                b_threshold=b_thres,
+            )
 
         y_list = self.iodrop(z_list)
         return y_list
