@@ -37,6 +37,7 @@ class MDEQWrapper(DEQModule2d):
     def forward(self, z1, u, **kwargs):
         train_step = kwargs.get('train_step', -1)
         threshold = kwargs.get('threshold', 30)
+        b_threshold = kwargs.get('b_threshold', threshold)
         writer = kwargs.get('writer', None)
 
         if u is None:
@@ -53,7 +54,7 @@ class MDEQWrapper(DEQModule2d):
                 self.func_copy,
                 new_z1,
                 u,
-                threshold,
+                b_threshold,
                 train_step,
                 writer,
                 qN_tensors,
