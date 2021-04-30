@@ -162,7 +162,7 @@ class DEQModule2d(nn.Module):
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
 
-                dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+                dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio or refine:
@@ -198,7 +198,14 @@ class DEQModule2d(nn.Module):
                 if not refine:
                     dl_df_est = torch.zeros_like(grad)
 
-                result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
+                result_info = broyden(
+                    g,
+                    dl_df_est,
+                    threshold=threshold,
+                    eps=eps,
+                    name="backward",
+                    init_tensors=qN_tensors if refine else None,
+                )
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
                 # which is why it's called dl / df where f is the function f of the
