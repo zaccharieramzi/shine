@@ -204,7 +204,7 @@ class DEQModule2d(nn.Module):
                     threshold=threshold,
                     eps=eps,
                     name="backward",
-                    init_tensors=qN_tensors if refine else None,
+                    init_tensors=qN_tensors if (refine and shine) else None,
                 )
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
