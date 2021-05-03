@@ -170,6 +170,8 @@ class DEQModule2d(nn.Module):
                 if fallback:
                     fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
                     dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
+                    if dl_df_est.get_device() == 0:
+                        writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask) / bsz, train_step)
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio or refine:
@@ -250,8 +252,6 @@ class DEQModule2d(nn.Module):
                             writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
                             writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
                             writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
-                        if shine and fallback:
-                            writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask) / bsz, train_step)
 
 
 
@@ -265,6 +265,7 @@ class DEQModule2d(nn.Module):
                     torch.cuda.empty_cache()
 
                 y.backward(torch.zeros_like(dl_df_est), retain_graph=False)
+
 
             grad_args = [None for _ in range(len(args))]
             return (None, dl_df_est, None, *grad_args)
