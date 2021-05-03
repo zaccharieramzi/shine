@@ -102,6 +102,7 @@ def train_classifier(
     gradient_correl=False,
     gradient_ratio=False,
     refine=False,
+    fallback=False,
     save_at=None,
     restart_from=None,
     use_group_norm=False,
@@ -131,6 +132,7 @@ def train_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         refine=refine,
+        fallback=fallback,
     )
 
     logger.info(pprint.pformat(args))
@@ -148,6 +150,7 @@ def train_classifier(
         gradient_correl=gradient_correl,
         gradient_ratio=gradient_ratio,
         refine=refine,
+        fallback=fallback,
     ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()

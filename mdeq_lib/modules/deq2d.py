@@ -121,6 +121,7 @@ class DEQModule2d(nn.Module):
         gradient_correl=False,
         gradient_ratio=False,
         refine=False,
+        fallback=False
     ):
         super(DEQModule2d, self).__init__()
         self.func = func
@@ -130,6 +131,7 @@ class DEQModule2d(nn.Module):
         self.gradient_correl = gradient_correl
         self.gradient_ratio = gradient_ratio
         self.refine = refine
+        self.fallback = fallback
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -157,7 +159,7 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine = args[-9:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine, fallback = args[-10:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
@@ -165,8 +167,9 @@ class DEQModule2d(nn.Module):
                 # is completely off.
                 # This hardcoded value should be changed at some point to a config
                 # value
-                fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
-                dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
+                if fallback:
+                    fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
+                    dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio or refine:
@@ -247,7 +250,7 @@ class DEQModule2d(nn.Module):
                             writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
                             writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
                             writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
-                        if shine:
+                        if shine and fallback:
                             writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask) / bsz, train_step)
 
 

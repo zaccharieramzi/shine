@@ -23,6 +23,7 @@ class MDEQWrapper(DEQModule2d):
             gradient_correl=False,
             gradient_ratio=False,
             refine=False,
+            fallback=fallback,
     ):
         super(MDEQWrapper, self).__init__(
             func,
@@ -32,6 +33,7 @@ class MDEQWrapper(DEQModule2d):
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
             refine=refine,
+            fallback=fallback,
         )
 
     def forward(self, z1, u, **kwargs):
@@ -63,6 +65,7 @@ class MDEQWrapper(DEQModule2d):
                 self.gradient_correl,
                 self.gradient_ratio,
                 self.refine,
+                self.fallback,
             )
             new_z1 = DEQFunc2d.vec2list(new_z1, cutoffs)
         return new_z1
