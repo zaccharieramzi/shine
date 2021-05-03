@@ -158,7 +158,7 @@ class DEQModule2d(nn.Module):
                 fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
                 dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
                 if dl_df_est.get_device() == 0:
-                    writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask) / bsz, train_step)
+                    writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask).type(torch.float64) / bsz, train_step)
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio:
