@@ -112,7 +112,17 @@ class DEQFunc2d(Function):
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False, gradient_ratio=False):
+    def __init__(
+        self,
+        func,
+        func_copy,
+        shine=False,
+        fpn=False,
+        gradient_correl=False,
+        gradient_ratio=False,
+        refine=False,
+        fallback=False
+    ):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
@@ -120,6 +130,8 @@ class DEQModule2d(nn.Module):
         self.fpn = fpn
         self.gradient_correl = gradient_correl
         self.gradient_ratio = gradient_ratio
+        self.refine = refine
+        self.fallback = fallback
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -147,7 +159,7 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio = args[-8:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine, fallback = args[-10:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
@@ -155,11 +167,14 @@ class DEQModule2d(nn.Module):
                 # is completely off.
                 # This hardcoded value should be changed at some point to a config
                 # value
-                if torch.norm(dl_df_est) > 1.:
-                    dl_df_est = grad
+                if fallback:
+                    fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
+                    dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
+                    if dl_df_est.get_device() == 0:
+                        writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask).type(torch.float64) / bsz, train_step)
             elif fpn:
                 dl_df_est = grad
-            if not(shine or fpn) or gradient_correl or gradient_ratio:
+            if not(shine or fpn) or gradient_correl or gradient_ratio or refine:
                 # here func is the mdeq module, that is the function defining the fixed point
                 if gradient_correl or gradient_ratio:
                     dl_df_est_old = dl_df_est
@@ -189,9 +204,17 @@ class DEQModule2d(nn.Module):
                     return res
 
                 eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
-                dl_df_est = torch.zeros_like(grad)
+                if not refine:
+                    dl_df_est = torch.zeros_like(grad)
 
-                result_info = broyden(g, dl_df_est, threshold=30, eps=eps, name="backward")
+                result_info = broyden(
+                    g,
+                    dl_df_est,
+                    threshold=threshold,
+                    eps=eps,
+                    name="backward",
+                    init_tensors=qN_tensors if (refine and shine) else None,
+                )
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
                 # which is why it's called dl / df where f is the function f of the
@@ -208,9 +231,6 @@ class DEQModule2d(nn.Module):
                     )
                     scaling = torch.norm(dl_df_est) * torch.norm(dl_df_est_old)
                     correl = correl / scaling
-                    accel_meth_name = 'shine' if shine else 'fpn'
-                    torch.save(dl_df_est_old, f'{accel_meth_name}_partial_grad_{threshold}_{-train_step}.pt')
-                    torch.save(dl_df_est, f'partial_grad_{threshold}_{-train_step}.pt')
 
                 if gradient_ratio:
                     ratio = torch.norm(dl_df_est) / torch.norm(dl_df_est_old)
@@ -235,6 +255,7 @@ class DEQModule2d(nn.Module):
 
 
 
+
                 status = analyze_broyden(result_info, judge=True)
                 if status:
                     err = {"z1": z1}
@@ -244,6 +265,7 @@ class DEQModule2d(nn.Module):
                     torch.cuda.empty_cache()
 
                 y.backward(torch.zeros_like(dl_df_est), retain_graph=False)
+
 
             grad_args = [None for _ in range(len(args))]
             return (None, dl_df_est, None, *grad_args)
