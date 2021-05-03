@@ -191,7 +191,7 @@ class DEQModule2d(nn.Module):
                 eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
                 dl_df_est = torch.zeros_like(grad)
 
-                result_info = broyden(g, dl_df_est, threshold=30, eps=eps, name="backward")
+                result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
                 # which is why it's called dl / df where f is the function f of the
