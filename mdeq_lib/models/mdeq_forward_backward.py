@@ -23,7 +23,7 @@ class MDEQWrapper(DEQModule2d):
             gradient_correl=False,
             gradient_ratio=False,
             refine=False,
-            fallback=fallback,
+            fallback=False,
     ):
         super(MDEQWrapper, self).__init__(
             func,
