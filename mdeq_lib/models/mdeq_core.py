@@ -359,6 +359,7 @@ class MDEQNet(nn.Module):
             fpn=False,
             gradient_correl=False,
             gradient_ratio=False,
+            refine=False,
             **kwargs,
     ):
         """
@@ -412,6 +413,7 @@ class MDEQNet(nn.Module):
             fpn=fpn,
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
+            refine=refine,
         )
         self.iodrop = VariationalHidDropout2d(0.0)
 
@@ -475,7 +477,14 @@ class MDEQNet(nn.Module):
         else:
             if train_step == self.pretrain_steps:
                 torch.cuda.empty_cache()
-            z_list = self.deq(z_list, x_list, threshold=f_thres, train_step=train_step, writer=writer)
+            z_list = self.deq(
+                z_list,
+                x_list,
+                threshold=f_thres,
+                train_step=train_step,
+                writer=writer,
+                b_threshold=b_thres,
+            )
 
         y_list = self.iodrop(z_list)
         return y_list

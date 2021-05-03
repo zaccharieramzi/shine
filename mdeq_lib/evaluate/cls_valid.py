@@ -35,6 +35,7 @@ def evaluate_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
+    refine=False,
     n_samples=None,
     seed=0,
     use_group_norm=False,
@@ -59,6 +60,7 @@ def evaluate_classifier(
         fpn=fpn,
         seed=seed,
         use_group_norm=use_group_norm,
+        refine=refine,
     )
 
     logger.info(pprint.pformat(args))
@@ -70,7 +72,7 @@ def evaluate_classifier(
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
     model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
-        config, shine=shine, fpn=fpn)
+        config, shine=shine, fpn=fpn, refine=refine)
 
     dump_input = torch.rand(
         (1, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0])
