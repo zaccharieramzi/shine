@@ -149,14 +149,16 @@ class DEQModule2d(nn.Module):
             args = ctx.args
             threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio = args[-8:]
             Us, VTs, nstep = qN_tensors
+            fallback = False
             if shine:
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
                 # This implements a fallback in case our inverse approximation
                 # is completely off.
                 # This hardcoded value should be changed at some point to a config
                 # value
-                if torch.norm(dl_df_est) > 1.:
+                if torch.norm(dl_df_est) > 1.3 * torch.norm(grad):
                     dl_df_est = grad
+                    fallback = True
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio:
@@ -232,6 +234,9 @@ class DEQModule2d(nn.Module):
                             writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
                             writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
                             writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
+                        if shine:
+                            writer.add_scalar('backward/fallback', int(fallback), train_step)
+
 
 
 
