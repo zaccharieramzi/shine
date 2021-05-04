@@ -138,7 +138,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
         Us, VTs, nstep = init_tensors
         LBFGS_thres = min(LBFGS_thres, VTs.shape[1])
         threshold = threshold + nstep
-        orig_n_step = nstep
+        orig_n_step = nstep.clone()
     update = -matvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], gx)
     new_objective = init_objective = torch.norm(gx).item()
     prot_break = False
