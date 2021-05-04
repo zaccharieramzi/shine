@@ -136,6 +136,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
         orig_n_step = 0
     else:
         Us, VTs, nstep = init_tensors
+        LBFGS_thres = min(LBFGS_thres, VTs.shape[1])
         threshold = threshold + nstep
         orig_n_step = nstep
     update = -matvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], gx)
