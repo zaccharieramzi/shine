@@ -100,6 +100,8 @@ def train_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
+    fallback=False,
+    refine=False,
     gradient_correl=False,
     gradient_ratio=False,
     save_at=None,
@@ -134,6 +136,8 @@ def train_classifier(
         fpn=fpn,
         seed=seed,
         use_group_norm=use_group_norm,
+        refine=refine,
+        fallback=fallback,
     )
 
     logger.info(pprint.pformat(args))
@@ -150,6 +154,8 @@ def train_classifier(
         fpn=fpn,
         gradient_correl=gradient_correl,
         gradient_ratio=gradient_ratio,
+        refine=refine,
+        fallback=fallback,
     ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
@@ -306,3 +312,8 @@ def train_classifier(
                 loss.backward()
                 end_backward = time.time()
                 backward_original_times.append(end_backward - start_backward)
+    method_name = Path(final_output_dir).name
+    torch.save(torch.tensor(forward_accelerated_times), f'{method_name}_forward_times.pt')
+    torch.save(torch.tensor(backward_accelerated_times), f'{method_name}_backward_times.pt')
+    torch.save(torch.tensor(forward_original_times), f'{model_size}_original_forward_times.pt')
+    torch.save(torch.tensor(backward_original_times), f'{model_size}_original_backward_times.pt')
