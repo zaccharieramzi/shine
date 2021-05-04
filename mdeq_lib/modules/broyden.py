@@ -149,7 +149,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
     lowest = new_objective
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
 
-    while new_objective >= eps and nstep < threshold:
+    while new_objective >= eps and nstep - orig_n_step < threshold:
         x_est, gx, delta_x, delta_gx, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls)
         nstep += 1
         tnstep += (ite+1)
