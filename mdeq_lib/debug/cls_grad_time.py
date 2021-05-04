@@ -268,11 +268,6 @@ def train_classifier(
             model.deq.fpn = fpn
             model.deq.gradient_ratio = gradient_ratio
             model.deq.gradient_correl = gradient_correl
-            if shine:
-                accel_grad_name = 'shine'
-            elif fpn:
-                accel_grad_name = 'fpn'
-            accel_grad_name += '_grad_{0}_{1}.pt'
             for f_thres in f_thres_range:
                 model.f_thres = f_thres
                 start_forward = time.time()
