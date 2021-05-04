@@ -268,6 +268,8 @@ def train_classifier(
             model.deq.fpn = fpn
             model.deq.gradient_ratio = gradient_ratio
             model.deq.gradient_correl = gradient_correl
+            model.refine = refine
+            model.fallback = fallback
             for f_thres in f_thres_range:
                 model.f_thres = f_thres
                 start_forward = time.time()
@@ -291,6 +293,8 @@ def train_classifier(
             model.deq.fpn = False
             model.deq.gradient_ratio = False
             model.deq.gradient_correl = False
+            model.refine = False
+            model.fallback = False
             for f_thres in f_thres_range:
                 model.f_thres = f_thres
                 start_forward = time.time()
