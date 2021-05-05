@@ -112,7 +112,16 @@ class DEQFunc2d(Function):
 
 
 class DEQModule2d(nn.Module):
-    def __init__(self, func, func_copy, shine=False, fpn=False, gradient_correl=False, gradient_ratio=False):
+    def __init__(
+        self,
+        func,
+        func_copy,
+        shine=False,
+        fpn=False,
+        gradient_correl=False,
+        gradient_ratio=False,
+        refine=False,
+    ):
         super(DEQModule2d, self).__init__()
         self.func = func
         self.func_copy = func_copy
@@ -120,6 +129,7 @@ class DEQModule2d(nn.Module):
         self.fpn = fpn
         self.gradient_correl = gradient_correl
         self.gradient_ratio = gradient_ratio
+        self.refine = refine
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -147,15 +157,15 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio = args[-8:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine = args[-9:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 # TODO: allow to use Us and VTs as initialization for the backward
 
-                dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+                dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
             elif fpn:
                 dl_df_est = grad
-            if not(shine or fpn) or gradient_correl or gradient_ratio:
+            if not(shine or fpn) or gradient_correl or gradient_ratio or refine:
                 # here func is the mdeq module, that is the function defining the fixed point
                 if gradient_correl or gradient_ratio:
                     dl_df_est_old = dl_df_est
@@ -185,9 +195,17 @@ class DEQModule2d(nn.Module):
                     return res
 
                 eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
-                dl_df_est = torch.zeros_like(grad)
+                if not refine:
+                    dl_df_est = torch.zeros_like(grad)
 
-                result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
+                result_info = broyden(
+                    g,
+                    dl_df_est,
+                    threshold=threshold,
+                    eps=eps,
+                    name="backward",
+                    init_tensors=qN_tensors if (refine and shine) else None,
+                )
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
                 # which is why it's called dl / df where f is the function f of the
