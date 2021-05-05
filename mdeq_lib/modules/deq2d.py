@@ -121,6 +121,7 @@ class DEQModule2d(nn.Module):
         gradient_correl=False,
         gradient_ratio=False,
         refine=False,
+        fallback=False
     ):
         super(DEQModule2d, self).__init__()
         self.func = func
@@ -130,6 +131,7 @@ class DEQModule2d(nn.Module):
         self.gradient_correl = gradient_correl
         self.gradient_ratio = gradient_ratio
         self.refine = refine
+        self.fallback = fallback
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
