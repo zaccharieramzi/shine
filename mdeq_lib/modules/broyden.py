@@ -119,7 +119,7 @@ def matvec(part_Us, part_VTs, x):
     return -x + torch.einsum('bijd, bd -> bij', part_Us, VTx)     # (N, 2d, L'), but should really be (N, (2d*L'), 1)
 
 
-def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
+def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
     bsz, total_hsize, n_elem = x0.size()
     dev = x0.device
 
@@ -130,9 +130,16 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     LBFGS_thres = min(threshold, 27)
 
     # For fast calculation of inv_jacobian (approximately)
-    Us = torch.zeros(bsz, total_hsize, n_elem, LBFGS_thres).to(dev)
-    VTs = torch.zeros(bsz, LBFGS_thres, total_hsize, n_elem).to(dev)
-    update = -gx
+    if init_tensors is None:
+        Us = torch.zeros(bsz, total_hsize, n_elem, LBFGS_thres).to(dev)
+        VTs = torch.zeros(bsz, LBFGS_thres, total_hsize, n_elem).to(dev)
+        orig_n_step = 0
+    else:
+        Us, VTs, nstep = init_tensors
+        LBFGS_thres = min(LBFGS_thres, VTs.shape[1])
+        threshold = threshold + nstep
+        orig_n_step = nstep.clone()
+    update = -matvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], gx)
     new_objective = init_objective = torch.norm(gx).item()
     prot_break = False
     trace = [init_objective]
@@ -179,9 +186,9 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown"):
     # NOTE: why was this present originally? is it a question of memory?
     # Us, VTs = None, None
     return {"result": lowest_xest,
-            "nstep": nstep,
+            "nstep": nstep - orig_n_step,
             "tnstep": tnstep,
-            "lowest_step": lowest_step,
+            "lowest_step": lowest_step - orig_n_step,
             "diff": torch.norm(lowest_gx).item(),
             "diff_detail": torch.norm(lowest_gx, dim=1),
             "prot_break": prot_break,
