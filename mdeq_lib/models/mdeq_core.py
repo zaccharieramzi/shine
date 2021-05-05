@@ -360,6 +360,7 @@ class MDEQNet(nn.Module):
             gradient_correl=False,
             gradient_ratio=False,
             refine=False,
+            fallback=False,
             **kwargs,
     ):
         """
@@ -414,6 +415,7 @@ class MDEQNet(nn.Module):
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
             refine=refine,
+            fallback=fallback,
         )
         self.iodrop = VariationalHidDropout2d(0.0)
 

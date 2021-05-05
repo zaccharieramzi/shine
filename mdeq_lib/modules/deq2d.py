@@ -157,19 +157,20 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine = args[-9:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine, fallback = args[-10:]
             Us, VTs, nstep = qN_tensors
             if shine:
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
-                # This implements a fallback in case our inverse approximation
-                # is completely off.
-                # This hardcoded value should be changed at some point to a config
-                # value
-                fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
-                fallback_mask = fallback_mask[:, None, None]
-                dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
-                if dl_df_est.get_device() == 0 and writer is not None:
-                    writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask).type(torch.float64) / bsz, train_step)
+                if fallback:
+                    # This implements a fallback in case our inverse approximation
+                    # is completely off.
+                    # This hardcoded value should be changed at some point to a config
+                    # value
+                    fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
+                    fallback_mask = fallback_mask[:, None, None]
+                    dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
+                    if dl_df_est.get_device() == 0 and writer is not None:
+                        writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask).type(torch.float64) / bsz, train_step)
             elif fpn:
                 dl_df_est = grad
             if not(shine or fpn) or gradient_correl or gradient_ratio or refine:

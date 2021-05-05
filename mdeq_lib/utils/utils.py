@@ -87,6 +87,7 @@ def create_logger(
     shine=False,
     fpn=False,
     refine=False,
+    fallback=False,
     seed=0,
     use_group_norm=False,
 ):
@@ -107,6 +108,8 @@ def create_logger(
         cfg_name += '_gn'
     if refine:
         cfg_name += '_ref'
+    if fallback:
+        cfg_name += '_fback'
     cfg_name += f'_{seed}'
 
     final_output_dir = root_output_dir / dataset / cfg_name
