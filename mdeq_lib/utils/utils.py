@@ -87,10 +87,7 @@ def create_logger(
     shine=False,
     fpn=False,
     refine=False,
-<<<<<<< HEAD
     fallback=False,
-=======
->>>>>>> fpn-fallback
     seed=0,
     use_group_norm=False,
 ):
