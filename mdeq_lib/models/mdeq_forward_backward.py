@@ -40,12 +40,13 @@ class MDEQWrapper(DEQModule2d):
         train_step = kwargs.get('train_step', -1)
         threshold = kwargs.get('threshold', 30)
         b_threshold = kwargs.get('b_threshold', threshold)
+        lim_mem = kwargs.get('lim_mem', 27)
         writer = kwargs.get('writer', None)
 
         if u is None:
             raise ValueError("Input injection is required.")
 
-        forward_out = DEQFunc2d.apply(self.func, z1, u, threshold, train_step, writer)
+        forward_out = DEQFunc2d.apply(self.func, z1, u, threshold, train_step, writer, lim_mem)
         new_z1 = list(forward_out[:-3])
         # qN_tensors = (Us, VTs, nstep)
         qN_tensors = forward_out[-3:]

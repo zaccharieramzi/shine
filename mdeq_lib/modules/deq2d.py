@@ -60,14 +60,23 @@ class DEQFunc2d(Function):
         return z1_list
 
     @staticmethod
-    def broyden_find_root(func, z1, u, eps, *args):
+    def broyden_find_root(func, z1, u, eps, *args, lim_mem=27):
         bsz = z1[0].size(0)
         z1_est = DEQFunc2d.list2vec(z1)
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
+        lim_mem = args[-1]
+        args = args[:-1]
         threshold, train_step, writer = args[-3:]
 
         g = lambda x: DEQFunc2d.g(func, x, u, cutoffs, *args)
-        result_info = broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
+        result_info = broyden(
+            g,
+            z1_est,
+            threshold=threshold,
+            eps=eps,
+            name="forward",
+            lim_mem=lim_mem,
+        )
         z1_est = result_info['result']
         nstep = result_info['nstep']
         lowest_step = result_info['lowest_step']

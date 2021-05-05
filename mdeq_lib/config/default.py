@@ -41,6 +41,7 @@ _C.MODEL.DROPOUT = 0.0
 _C.MODEL.NUM_CLASSES = 1000
 _C.MODEL.F_THRES = 30
 _C.MODEL.B_THRES = 40
+_C.MODEL.LIM_MEM = 27
 _C.MODEL.DOWNSAMPLE_TIMES = 2
 _C.MODEL.EXPANSION_FACTOR = 5
 _C.MODEL.TAG_PER_JOINT = True
@@ -171,10 +172,10 @@ def update_config(cfg, args):
 
     if args.testModel:
         cfg.TEST.MODEL_FILE = args.testModel
-    
+
     if args.percent < 1:
         cfg.PERCENT = args.percent
-        
+
     cfg.merge_from_list(args.opts)
 
     cfg.freeze()
@@ -184,4 +185,3 @@ if __name__ == '__main__':
     import sys
     with open(sys.argv[1], 'w') as f:
         print(_C, file=f)
-
