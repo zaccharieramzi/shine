@@ -430,6 +430,8 @@ class MDEQNet(nn.Module):
         self.f_thres = cfg['MODEL']['F_THRES']
         self.b_thres = cfg['MODEL']['B_THRES']
         self.lim_mem = cfg['MODEL']['LIM_MEM']
+        if self.lim_mem is None:
+            self.lim_mem = self.f_thres
         self.num_classes = cfg['MODEL']['NUM_CLASSES']
         self.downsample_times = cfg['MODEL']['DOWNSAMPLE_TIMES']
         self.pretrain_steps = cfg['TRAIN']['PRETRAIN_STEPS']
