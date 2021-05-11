@@ -124,7 +124,7 @@ def train_classifier(
         dataset=dataset,
         model_size=model_size,
         use_group_norm=use_group_norm,
-        n_refine=None if not refine else n_refine,
+        n_refine=n_refine,
     )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
