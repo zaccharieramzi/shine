@@ -60,14 +60,23 @@ class DEQFunc2d(Function):
         return z1_list
 
     @staticmethod
-    def broyden_find_root(func, z1, u, eps, *args):
+    def broyden_find_root(func, z1, u, eps, *args, lim_mem=27):
         bsz = z1[0].size(0)
         z1_est = DEQFunc2d.list2vec(z1)
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
+        lim_mem = args[-1]
+        args = args[:-1]
         threshold, train_step, writer = args[-3:]
 
         g = lambda x: DEQFunc2d.g(func, x, u, cutoffs, *args)
-        result_info = broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
+        result_info = broyden(
+            g,
+            z1_est,
+            threshold=threshold,
+            eps=eps,
+            name="forward",
+            lim_mem=lim_mem,
+        )
         z1_est = result_info['result']
         nstep = result_info['nstep']
         lowest_step = result_info['lowest_step']
@@ -163,11 +172,11 @@ class DEQModule2d(nn.Module):
             Us, VTs, nstep = qN_tensors
             if shine:
                 dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
-                # This implements a fallback in case our inverse approximation
-                # is completely off.
-                # This hardcoded value should be changed at some point to a config
-                # value
                 if fallback:
+                    # This implements a fallback in case our inverse approximation
+                    # is completely off.
+                    # This hardcoded value should be changed at some point to a config
+                    # value
                     fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
                     fallback_mask = fallback_mask[:, None, None]
                     dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est

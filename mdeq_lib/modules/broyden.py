@@ -119,7 +119,16 @@ def matvec(part_Us, part_VTs, x):
     return -x + torch.einsum('bijd, bd -> bij', part_Us, VTx)     # (N, 2d, L'), but should really be (N, (2d*L'), 1)
 
 
-def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
+def broyden(
+        g,
+        x0,
+        threshold,
+        eps,
+        ls=False,
+        name="unknown",
+        init_tensors=None,
+        lim_mem=27,
+    ):
     bsz, total_hsize, n_elem = x0.size()
     dev = x0.device
 
@@ -127,7 +136,7 @@ def broyden(g, x0, threshold, eps, ls=False, name="unknown", init_tensors=None):
     gx = g(x_est)        # (bsz, 2d, L')
     nstep = 0
     tnstep = 0
-    LBFGS_thres = min(threshold, 27)
+    LBFGS_thres = min(threshold, lim_mem)
 
     # For fast calculation of inv_jacobian (approximately)
     if init_tensors is None:

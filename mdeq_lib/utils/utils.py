@@ -87,6 +87,7 @@ def create_logger(
     shine=False,
     fpn=False,
     refine=False,
+    n_refine=None,
     fallback=False,
     seed=0,
     use_group_norm=False,
@@ -108,6 +109,11 @@ def create_logger(
         cfg_name += '_gn'
     if refine:
         cfg_name += '_ref'
+        if n_refine is not None:
+            cfg_name += f'{n_refine}'
+    else:
+        if not (shine or fpn) and n_refine is not None:
+            cfg_name += f'_bwi{n_refine}'
     if fallback:
         cfg_name += '_fback'
     cfg_name += f'_{seed}'
