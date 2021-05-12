@@ -53,7 +53,9 @@ Args = namedtuple(
 
 def worker_init_fn(worker_id, seed=0):
     """Helper to make random number generation independent in each process."""
-    np.random.seed(8*seed + worker_id)
+    worker_seed = 8*seed + worker_id
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
 
 def update_config_w_args(
     n_epochs=100,
