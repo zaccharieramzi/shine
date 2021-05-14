@@ -6,37 +6,37 @@ plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
-results_cifar = {
+esults_cifar = {
     None: {
-        'original': {'perf': (93.512, 0.15210626), 'time': (14.5, 0), 'backward-time': (210)},
-#         'shine': {'perf': (93.506, 0.18445666), 'time': (11.5, 0), 'backward-time': (16.0)},
-#         'fpn': {'perf': (93.516, 0.17001258), 'time': (11.5, 0), 'backward-time': (12.9)},
+        'original': {'perf': (93.512, 0.15210626), 'time': (14.5, 0), 'backward-time': (209)},
+        'shine': {'perf': (93.506, 0.18445666), 'time': (11.5, 0), 'backward-time': (273)},
+        'fpn': {'perf': (93.516, 0.17001258), 'time': (11.5, 0), 'backward-time': (198)},
     },
-#     10: {
-#         'original': {'perf': (93.47399, 0.12986298), 'time': (12.9, 0), 'backward-time': (86.4)},
-#         'shine': {'perf': (93.467995, 0.15638326), 'time': (13, 0), 'backward-time': (96.6)},
-#         'fpn': {'perf': (93.602005, 0.14147879), 'time': (12.7, 0), 'backward-time': (86.5)},
-#     },
-#     7: {
-#         'original': {'perf': (93.467995, 0.14958589), 'time': (12.9, 0), 'backward-time': (86.4)},
-#         'shine': {'perf': (93.498, 0.23172565), 'time': (13, 0), 'backward-time': (96.6)},
-#         'fpn': {'perf': (93.495995, 0.27557778), 'time': (12.7, 0), 'backward-time': (86.5)},
-#     },
-    5: {
-        'original': {'perf': (93.12, 0.23), 'time': (12.9, 0), 'backward-time': (86.4)},
-        'shine': {'perf': (93.17, 0.33), 'time': (13, 0), 'backward-time': (96.6)},
-        'fpn': {'perf': (93.06, 0.32), 'time': (12.7, 0), 'backward-time': (86.5)},
+    10: {
+        'original': {'perf': (93.47399, 0.12986298), 'time': (12.9, 0), 'backward-time': (142.8)},
+        'shine': {'perf': (93.467995, 0.15638326), 'time': (13, 0), 'backward-time': (157)},
+        'fpn': {'perf': (93.602005, 0.14147879), 'time': (12.7, 0), 'backward-time': (142.6)},
     },
-#     2: {
-#         'original': {'perf': (93.409996, 0.15059815), 'time': (12.9, 0), 'backward-time': (86.4)},
-#         'shine': {'perf': (93.404, 0.14193195), 'time': (13, 0), 'backward-time': (96.6)},
-#         'fpn': {'perf': (93.478004, 0.24854626), 'time': (12.7, 0), 'backward-time': (86.5)},
+    7: {
+        'original': {'perf': (93.467995, 0.14958589), 'time': (12.9, 0), 'backward-time': (108)},
+        'shine': {'perf': (93.498, 0.23172565), 'time': (13, 0), 'backward-time': (119)},
+        'fpn': {'perf': (93.495995, 0.27557778), 'time': (12.7, 0), 'backward-time': (109)},
+    },
+#     5: {
+#         'original': {'perf': (93.12, 0.23), 'time': (12.9, 0), 'backward-time': (86.4)},
+#         'shine': {'perf': (93.17, 0.33), 'time': (13, 0), 'backward-time': (96.6)},
+#         'fpn': {'perf': (93.06, 0.32), 'time': (12.7, 0), 'backward-time': (86.5)},
 #     },
-#     1: {
-#         'original': {'perf': (92.642, 0.09927742), 'time': (12.9, 0), 'backward-time': (86.4)},
-#         'shine': {'perf': (93.376, 0.24063425), 'time': (13, 0), 'backward-time': (96.6)},
-#         'fpn': {'perf': (93.343994, 0.18325926), 'time': (12.7, 0), 'backward-time': (86.5)},
-#     },
+    2: {
+        'original': {'perf': (93.409996, 0.15059815), 'time': (12.9, 0), 'backward-time': (53.7)},
+        'shine': {'perf': (93.404, 0.14193195), 'time': (13, 0), 'backward-time': (58.9)},
+        'fpn': {'perf': (93.478004, 0.24854626), 'time': (12.7, 0), 'backward-time': (53.3)},
+    },
+    1: {
+        'original': {'perf': (92.642, 0.09927742), 'time': (12.9, 0), 'backward-time': (41.54)},
+        'shine': {'perf': (93.376, 0.24063425), 'time': (13, 0), 'backward-time': (46.9)},
+        'fpn': {'perf': (93.343994, 0.18325926), 'time': (12.7, 0), 'backward-time': (41.58)},
+    },
     0: {
         'fpn': {'perf': (93.091995, 0.11338575), 'time': (12.7, 0), 'backward-time': (12.9)},
         'shine': {'perf': (93.144, 0.1843464), 'time': (13, 0), 'backward-time': (16.0)},
@@ -83,8 +83,9 @@ naming_scheme = {
 }
 
 annotation_offset = {
-   (None, 'original'): (-25, -12) ,
+   (None, 'original'): (-13, -3.8) ,
 #    (5, 'original'): (-45, 6) ,
+('SMALL', 'original'): (-13, -3.8),
 }
 
 curves = {
@@ -112,13 +113,14 @@ for xp_name, xp_res in results_cifar.items():
         if xp_name == 0 or xp_name is None:
             handles.append(ep[0])
         n_refine = xp_name if xp_name is not None else 20
-        ax_cifar.annotate(
-#             f'{naming_scheme[method_name]} - {n_refine}',
-            f'{n_refine}',
-            (x, y),
-            annotation_offset.get((xp_name, method_name), (10, -3.8)),
-            textcoords='offset points',
-        )
+        if n_refine == 0:
+            ax_cifar.annotate(
+    #             f'{naming_scheme[method_name]} - {n_refine}',
+                f'{n_refine}',
+                (x, y),
+                annotation_offset.get((xp_name, method_name), (3.5, -3.8)),
+                textcoords='offset points',
+            )
 
 #curves sorting/plotting
 for k, (x, y) in curves.items():
@@ -145,9 +147,16 @@ for xp_name, xp_res in results_imagenet.items():
             color=color_scheme[method_name],
             fmt='o',
         )
+        if xp_name == 'SMALL-refine':
+            n_refine = 5
+        else:
+            if method_name == 'original':
+                n_refine = 27
+            else:
+                n_refine = 0
         ax_imagenet.annotate(
 #             f'{naming_scheme[method_name]} - {-1}',
-            f'{-1}',
+            f'{n_refine}',
             (x, y),
             annotation_offset.get((xp_name, method_name), (10, -3.8)),
             textcoords='offset points',
