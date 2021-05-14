@@ -62,7 +62,7 @@ results_imagenet = {
 }
 
 fig = plt.figure(figsize=(5.5, 2.1))
-g = fig.add_gridspec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
+g = fig.add_gridspec(1, 3, width_ratios=[0.44, 0.44, .1], wspace=.3)
 handles = []
 labels = [
     'Original Method',
