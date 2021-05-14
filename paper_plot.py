@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.style.use(['science', 'grid'])
+plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
@@ -159,10 +159,8 @@ ax_legend = fig.add_subplot(g[0, 2])
 ax_legend.axis('off')
 ax_legend.legend(handles, labels, loc='center', ncol=1, handlelength=1.5, handletextpad=.1)
 
-fig.supxlabel(
-    'Median backward pass in ms, on a single V100 GPU, Batch size = 32',
-    # x=0.5,
-    # y=-0.3,
-)
+fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32', loc='left')
 
 fig.savefig('merged_results_latency_style.pdf', dpi=300);
