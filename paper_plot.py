@@ -126,7 +126,7 @@ for k, (x, y) in curves.items():
     x_sorted, y_sorted = [x[i] for i in idx], [y[i] for i in idx]
     ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
 # ax_cifar.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
-ax_cifar.set_ylabel('Top-1 accuracy (\%)')
+ax_cifar.set_ylabel('Top-1 accuracy (\%)', fontsize=9)
 ax_cifar.set_title('CIFAR10')
 
 #Imagenet
@@ -161,6 +161,6 @@ ax_legend.legend(handles, labels, loc='center', ncol=1, handlelength=1.5, handle
 
 fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-plt.xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32', loc='left')
+plt.xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32', loc='left', fontsize=9)
 
 fig.savefig('merged_results_latency_style.pdf', dpi=300);
