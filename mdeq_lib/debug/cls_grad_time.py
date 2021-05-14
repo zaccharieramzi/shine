@@ -144,6 +144,7 @@ def train_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         refine=refine,
+        n_refine=n_refine,
         fallback=fallback,
     )
 
