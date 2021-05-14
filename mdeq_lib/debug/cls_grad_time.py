@@ -324,3 +324,4 @@ def train_classifier(
     torch.save(torch.tensor(backward_accelerated_times), f'{method_name}_backward_times.pt')
     torch.save(torch.tensor(forward_original_times), f'{model_size}_original_forward_times.pt')
     torch.save(torch.tensor(backward_original_times), f'{model_size}_original_backward_times.pt')
+    return np.median(backward_accelerated_times)
