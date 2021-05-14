@@ -166,5 +166,3 @@ fig.supxlabel(
 )
 
 fig.savefig('merged_results_latency_style.pdf', dpi=300);
-
-plt.show()
