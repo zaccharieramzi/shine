@@ -85,7 +85,7 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
             raise NotImplementedError('Use adj_type C for now')
         else:
             sigma = gx
-        part_Us, part_VTs = Us[:,:,:,:(nstep-1)], VTs[:,:(nstep-1)]
+        part_Us, part_VTs = Us[..., :nstep - 1], VTs[:, :nstep - 1]
         # a = An^{-1} sigma
         a = matvec(part_Us, part_VTs, sigma)
         # b = sigma^T g'(xn) An^{-1}
