@@ -19,7 +19,6 @@ from termcolor import colored
 import copy
 from mdeq_lib.modules.broyden import broyden, analyze_broyden, rmatvec
 from mdeq_lib.modules.adj_broyden import adj_broyden
-from tqdm import tqdm
 
 import logging
 logger = logging.getLogger(__name__)
