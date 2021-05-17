@@ -52,7 +52,7 @@ class MDEQWrapper(DEQModule2d):
             self.func,
             z1,
             u,
-            self.adjoint_broyden,
+            self.adjoint_broyden if train_step > -1 else False,
             threshold,
             train_step,
             writer,
