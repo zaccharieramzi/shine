@@ -7,6 +7,7 @@ from __future__ import print_function
 import argparse
 import os
 import sys
+import random
 import shutil
 import pprint
 
@@ -34,6 +35,8 @@ def evaluate_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
+    refine=False,
+    fallback=False,
     n_samples=None,
     seed=0,
     adjoint_broyden=False,
@@ -41,6 +44,7 @@ def evaluate_classifier(
     check_contract=False,
     n_iter=20,
 ):
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     args = update_config_w_args(
@@ -59,6 +63,8 @@ def evaluate_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         adjoint_broyden=adjoint_broyden,
+        refine=refine,
+        fallback=fallback,
     )
 
     logger.info(pprint.pformat(args))
@@ -70,7 +76,7 @@ def evaluate_classifier(
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
     model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
-        config, shine=shine, fpn=fpn, adjoint_broyden=adjoint_broyden)
+        config, shine=shine, fpn=fpn, refine=refine, fallback=fallback, adjoint_broyden=adjoint_broyden)
 
     dump_input = torch.rand(
         (1, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0])

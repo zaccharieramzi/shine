@@ -61,21 +61,30 @@ class DEQFunc2d(Function):
         return z1_list
 
     @staticmethod
-    def broyden_find_root(func, z1, u, eps, *args, adjoint=False):
+    def broyden_find_root(func, z1, u, eps, *args, adjoint=False, lim_mem=27):
         bsz = z1[0].size(0)
         z1_est = DEQFunc2d.list2vec(z1)
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
+        lim_mem = args[-1]
+        args = args[:-1]
         threshold, train_step, writer = args[-3:]
         if adjoint:
             new_u = [elem.clone().detach() for elem in u]
+            broyden_fun = adj_broyden
+            add_kwargs = {}
         else:
             new_u = u
-
-        g = lambda x: DEQFunc2d.g(func, x, new_u, cutoffs, *args)
-        if adjoint:
-            result_info = adj_broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
-        else:
-            result_info = broyden(g, z1_est, threshold=threshold, eps=eps, name="forward")
+            broyden_fun = broyden
+            add_kwargs = dict(lim_mem=lim_mem)
+        g = lambda x: DEQFunc2d.g(func, x, u, cutoffs, *args)
+        result_info = broyden_fun(
+            g,
+            z1_est,
+            threshold=threshold,
+            eps=eps,
+            name="forward",
+            **add_kwargs,
+        )
         z1_est = result_info['result']
         nstep = result_info['nstep']
         lowest_step = result_info['lowest_step']
@@ -129,6 +138,8 @@ class DEQModule2d(nn.Module):
         gradient_correl=False,
         gradient_ratio=False,
         adjoint_broyden=False,
+        refine=False,
+        fallback=False
     ):
         super(DEQModule2d, self).__init__()
         self.func = func
@@ -138,6 +149,8 @@ class DEQModule2d(nn.Module):
         self.gradient_correl = gradient_correl
         self.gradient_ratio = gradient_ratio
         self.adjoint_broyden = adjoint_broyden
+        self.refine = refine
+        self.fallback = fallback
 
     def forward(self, z1s, us, z0, **kwargs):
         raise NotImplemented
@@ -165,15 +178,23 @@ class DEQModule2d(nn.Module):
             factor = sum(ue.nelement() for ue in u) // z1.nelement()
             cutoffs = [(elem.size(1) // factor, elem.size(2), elem.size(3)) for elem in u]
             args = ctx.args
-            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio = args[-8:]
+            threshold, train_step, writer, qN_tensors, shine, fpn, gradient_correl, gradient_ratio, refine, fallback = args[-10:]
             Us, VTs, nstep = qN_tensors
             if shine:
-                # TODO: allow to use Us and VTs as initialization for the backward
-
-                dl_df_est = - rmatvec(Us[:,:,:,:nstep], VTs[:,:nstep], grad)
+                dl_df_est = - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
+                if fallback:
+                    # This implements a fallback in case our inverse approximation
+                    # is completely off.
+                    # This hardcoded value should be changed at some point to a config
+                    # value
+                    fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
+                    fallback_mask = fallback_mask[:, None, None]
+                    dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
+                    if dl_df_est.get_device() == 0 and writer is not None:
+                        writer.add_scalar('backward/fallback_prop', torch.sum(fallback_mask).type(torch.float64) / bsz, train_step)
             elif fpn:
                 dl_df_est = grad
-            if not(shine or fpn) or gradient_correl or gradient_ratio:
+            if not(shine or fpn) or gradient_correl or gradient_ratio or refine:
                 # here func is the mdeq module, that is the function defining the fixed point
                 if gradient_correl or gradient_ratio:
                     dl_df_est_old = dl_df_est
@@ -203,9 +224,17 @@ class DEQModule2d(nn.Module):
                     return res
 
                 eps = 2e-10 * np.sqrt(bsz * seq_len * d_model)
-                dl_df_est = torch.zeros_like(grad)
+                if not refine:
+                    dl_df_est = torch.zeros_like(grad)
 
-                result_info = broyden(g, dl_df_est, threshold=threshold, eps=eps, name="backward")
+                result_info = broyden(
+                    g,
+                    dl_df_est,
+                    threshold=threshold,
+                    eps=eps,
+                    name="backward",
+                    init_tensors=qN_tensors if (refine and shine) else None,
+                )
                 # dl_df_est is the approximation of the first part of the derivation
                 # eq 3: it's dl/dz^star * (-Jg^-1)
                 # which is why it's called dl / df where f is the function f of the
@@ -243,6 +272,7 @@ class DEQModule2d(nn.Module):
                             writer.add_scalar('backward/nstep', result_info['nstep'], train_step)
                             writer.add_scalar('backward/lowest_step', result_info['lowest_step'], train_step)
                             writer.add_scalar('backward/final_trace', result_info['new_trace'][lowest_step], train_step)
+
 
 
 

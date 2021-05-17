@@ -23,6 +23,8 @@ class MDEQWrapper(DEQModule2d):
             gradient_correl=False,
             gradient_ratio=False,
             adjoint_broyden=False,
+            refine=False,
+            fallback=False,
     ):
         super(MDEQWrapper, self).__init__(
             func,
@@ -32,11 +34,15 @@ class MDEQWrapper(DEQModule2d):
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
             adjoint_broyden=adjoint_broyden,
+            refine=refine,
+            fallback=fallback,
         )
 
     def forward(self, z1, u, **kwargs):
         train_step = kwargs.get('train_step', -1)
         threshold = kwargs.get('threshold', 30)
+        b_threshold = kwargs.get('b_threshold', threshold)
+        lim_mem = kwargs.get('lim_mem', 27)
         writer = kwargs.get('writer', None)
 
         if u is None:
@@ -50,6 +56,7 @@ class MDEQWrapper(DEQModule2d):
             threshold,
             train_step,
             writer,
+            lim_mem,
         )
         new_z1 = list(forward_out[:-3])
         # qN_tensors = (Us, VTs, nstep)
@@ -61,7 +68,7 @@ class MDEQWrapper(DEQModule2d):
                 self.func_copy,
                 new_z1,
                 u,
-                threshold,
+                b_threshold,
                 train_step,
                 writer,
                 qN_tensors,
@@ -69,6 +76,8 @@ class MDEQWrapper(DEQModule2d):
                 self.fpn,
                 self.gradient_correl,
                 self.gradient_ratio,
+                self.refine,
+                self.fallback,
             )
             new_z1 = DEQFunc2d.vec2list(new_z1, cutoffs)
         return new_z1

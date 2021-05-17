@@ -360,6 +360,8 @@ class MDEQNet(nn.Module):
             gradient_correl=False,
             gradient_ratio=False,
             adjoint_broyden=False,
+            refine=False,
+            fallback=False,
             **kwargs,
     ):
         """
@@ -414,6 +416,8 @@ class MDEQNet(nn.Module):
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
             adjoint_broyden=adjoint_broyden,
+            refine=refine,
+            fallback=fallback,
         )
         self.iodrop = VariationalHidDropout2d(0.0)
 
@@ -427,6 +431,9 @@ class MDEQNet(nn.Module):
         self.wnorm = cfg['MODEL']['WNORM']
         self.f_thres = cfg['MODEL']['F_THRES']
         self.b_thres = cfg['MODEL']['B_THRES']
+        self.lim_mem = cfg['MODEL']['LIM_MEM']
+        if self.lim_mem is None:
+            self.lim_mem = self.f_thres
         self.num_classes = cfg['MODEL']['NUM_CLASSES']
         self.downsample_times = cfg['MODEL']['DOWNSAMPLE_TIMES']
         self.pretrain_steps = cfg['TRAIN']['PRETRAIN_STEPS']
@@ -454,6 +461,7 @@ class MDEQNet(nn.Module):
         num_branches = self.num_branches
         f_thres = kwargs.get('f_thres', self.f_thres)
         b_thres = kwargs.get('b_thres', self.b_thres)
+        lim_mem = kwargs.get('lim_mem', self.lim_mem)
         writer = kwargs.get('writer', None)     # For tensorboard
         x = self.downsample(x)
         dev = x.device
@@ -477,7 +485,15 @@ class MDEQNet(nn.Module):
         else:
             if train_step == self.pretrain_steps:
                 torch.cuda.empty_cache()
-            z_list = self.deq(z_list, x_list, threshold=f_thres, train_step=train_step, writer=writer)
+            z_list = self.deq(
+                z_list,
+                x_list,
+                threshold=f_thres,
+                train_step=train_step,
+                writer=writer,
+                b_threshold=b_thres,
+                lim_mem=lim_mem,
+            )
 
         y_list = self.iodrop(z_list)
         return y_list

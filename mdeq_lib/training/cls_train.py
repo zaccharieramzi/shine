@@ -9,6 +9,7 @@ from functools import partial
 from collections import namedtuple
 from pathlib import Path
 import pprint
+import random
 import shutil
 import sys
 
@@ -101,11 +102,14 @@ def train_classifier(
     gradient_correl=False,
     gradient_ratio=False,
     adjoint_broyden=False,
+    refine=False,
+    fallback=False,
     save_at=None,
     restart_from=None,
     use_group_norm=False,
     seed=0,
 ):
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     args = update_config_w_args(
@@ -129,6 +133,8 @@ def train_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         adjoint_broyden=adjoint_broyden,
+        refine=refine,
+        fallback=fallback,
     )
 
     logger.info(pprint.pformat(args))
@@ -146,6 +152,8 @@ def train_classifier(
         gradient_correl=gradient_correl,
         gradient_ratio=gradient_ratio,
         adjoint_broyden=adjoint_broyden,
+        refine=refine,
+        fallback=fallback,
     ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
