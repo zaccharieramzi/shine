@@ -103,6 +103,9 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
         # broyden by Shaojie
         u = a
         vT = c
+        if torch.isnan(vT).any() or torch.isnan(u).any():
+            msg = colored(f"WARNING: Adjoint Broyden resulted in some nan for the qN matrices.", 'red')
+            print(msg)
         vT[vT != vT] = 0
         u[u != u] = 0
         VTs[:,(nstep-1) % LBFGS_thres] = vT
