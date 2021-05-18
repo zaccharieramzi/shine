@@ -50,6 +50,7 @@ def adj_broyden(
     x_est = x0           # (bsz, 2d, L')
     gx = g(x_est)        # (bsz, 2d, L')
     nstep = 0
+    n_updates = 0
     tnstep = 0
     LBFGS_thres = min(threshold, 27)
 
@@ -66,8 +67,28 @@ def adj_broyden(
     protect_thres = 1e6 * n_elem
     lowest = new_objective
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
-
+    opa = inverse_direction_fun is not None and inverse_direction_freq is not None
     while new_objective >= eps and nstep < threshold:
+        if opa and nstep > 1 and nstep % inverse_direction_freq == 0:
+            inverse_direction = inverse_direction_fun(x_est)
+            e = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], inverse_direction)
+            e = e / torch.norm(e) * torch.norm(update)
+            gx.backward(e)
+            b = x_temp.grad
+            a = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], e)
+            b = rmatvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], b)
+            c = (sigma - b) / torch.einsum('bij, bij -> b', b, e)[:, None, None]
+            x_temp.grad.zero_()
+            u = a
+            vT = c
+            if torch.isnan(vT).any() or torch.isnan(u).any():
+                msg = colored(f"WARNING: OPA resulted in some nan for the qN matrices.", 'red')
+                print(msg)
+            vT[vT != vT] = 0
+            u[u != u] = 0
+            n_updates += 1
+            VTs[:,(n_updates-1) % LBFGS_thres] = vT
+            Us[:,:,:,(n_updates-1) % LBFGS_thres] = u
         x_est, delta_x, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls, compute_g=False)
         x_temp = x_est.clone().detach().requires_grad_()
         with torch.enable_grad():
@@ -99,14 +120,15 @@ def adj_broyden(
             raise NotImplementedError('Use adj_type C for now')
         else:
             sigma = gx
-        part_Us, part_VTs = Us[..., :nstep - 1], VTs[:, :nstep - 1]
+        n_updates += 1
+        part_Us, part_VTs = Us[..., :n_updates - 1], VTs[:, :n_updates - 1]
         # a = An^{-1} sigma
         a = matvec(part_Us, part_VTs, sigma)
         # b = sigma^T g'(xn) An^{-1}
         #######
         # Backprop on g
         #######
-        gx.backward(sigma, retain_graph=False)
+        gx.backward(sigma, retain_graph=(opa and nstep>1 and nstep%inverse_direction_freq==0))
         b = x_temp.grad
         #######
         b = rmatvec(part_Us, part_VTs, b)
@@ -122,9 +144,9 @@ def adj_broyden(
             print(msg)
         vT[vT != vT] = 0
         u[u != u] = 0
-        VTs[:,(nstep-1) % LBFGS_thres] = vT
-        Us[:,:,:,(nstep-1) % LBFGS_thres] = u
-        update = -matvec(Us[:,:,:,:nstep], VTs[:,:nstep], gx)
+        VTs[:,(n_updates-1) % LBFGS_thres] = vT
+        Us[:,:,:,(n_updates-1) % LBFGS_thres] = u
+        update = -matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], gx)
 
     # NOTE: why was this present originally? is it a question of memory?
     # Us, VTs = None, None
