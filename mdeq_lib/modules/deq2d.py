@@ -66,7 +66,7 @@ class DEQFunc2d(Function):
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
         lim_mem = args[-1]
         args = args[:-1]
-        threshold, train_step, writer, opa_freq, inverse_direction_function = args[-3:]
+        threshold, train_step, writer, opa_freq, inverse_direction_function = args[-5:]
         if adjoint:
             new_u = [elem.clone().detach() for elem in u]
             broyden_fun = adj_broyden
