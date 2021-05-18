@@ -22,11 +22,11 @@ esults_cifar = {
         'shine': {'perf': (93.498, 0.23172565), 'time': (13, 0), 'backward-time': (119)},
         'fpn': {'perf': (93.495995, 0.27557778), 'time': (12.7, 0), 'backward-time': (109)},
     },
-#     5: {
-#         'original': {'perf': (93.12, 0.23), 'time': (12.9, 0), 'backward-time': (86.4)},
-#         'shine': {'perf': (93.17, 0.33), 'time': (13, 0), 'backward-time': (96.6)},
-#         'fpn': {'perf': (93.06, 0.32), 'time': (12.7, 0), 'backward-time': (86.5)},
-#     },
+    5: {
+        'original': {'perf': (93.621994, 0.12890144), 'time': (12.9, 0), 'backward-time': (86.4)},
+        'shine': {'perf': (93.54399, 0.18575287), 'time': (13, 0), 'backward-time': (96.6)},
+        'fpn': {'perf': (93.476, 0.14759484), 'time': (12.7, 0), 'backward-time': (86.5)},
+    },
     2: {
         'original': {'perf': (93.409996, 0.15059815), 'time': (12.9, 0), 'backward-time': (53.7)},
         'shine': {'perf': (93.404, 0.14193195), 'time': (13, 0), 'backward-time': (58.9)},
