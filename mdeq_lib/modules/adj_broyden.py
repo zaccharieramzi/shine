@@ -77,7 +77,7 @@ def adj_broyden(
             b = x_temp.grad
             a = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], e)
             b = rmatvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], b)
-            c = (sigma - b) / torch.einsum('bij, bij -> b', b, e)[:, None, None]
+            c = (e - b) / torch.einsum('bij, bij -> b', b, e)[:, None, None]
             x_temp.grad.zero_()
             u = a
             vT = c
