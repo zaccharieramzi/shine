@@ -456,7 +456,7 @@ class MDEQNet(nn.Module):
     def _debug_build_fake_deq_input(self, x):
         x = self.downsample(x)
         dev = x.device
-        x_list = [self.stage0(x) if self.stage0 else x]
+        x_list = [self.stage0(x).clone().detach() if self.stage0 else x]
         for i in range(1, self.num_branches):
             bsz, _, H, W = x_list[-1].shape
             x_list.append(torch.zeros(bsz, self.num_channels[i], H//2, W//2).to(dev))   # ... and the rest are all zeros
