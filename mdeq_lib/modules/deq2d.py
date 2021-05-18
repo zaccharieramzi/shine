@@ -75,7 +75,7 @@ class DEQFunc2d(Function):
             new_u = u
             broyden_fun = broyden
             add_kwargs = dict(lim_mem=lim_mem)
-        g = lambda x: DEQFunc2d.g(func, x, u, cutoffs, *args)
+        g = lambda x: DEQFunc2d.g(func, x, new_u, cutoffs, *args)
         result_info = broyden_fun(
             g,
             z1_est,
