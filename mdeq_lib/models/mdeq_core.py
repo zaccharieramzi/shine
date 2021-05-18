@@ -434,6 +434,7 @@ class MDEQNet(nn.Module):
         self.lim_mem = cfg['MODEL']['LIM_MEM']
         if self.lim_mem is None:
             self.lim_mem = self.f_thres
+        self.opa_freq = cfg['MODEL']['OPA_FREQ']
         self.num_classes = cfg['MODEL']['NUM_CLASSES']
         self.downsample_times = cfg['MODEL']['DOWNSAMPLE_TIMES']
         self.pretrain_steps = cfg['TRAIN']['PRETRAIN_STEPS']
@@ -462,6 +463,8 @@ class MDEQNet(nn.Module):
         f_thres = kwargs.get('f_thres', self.f_thres)
         b_thres = kwargs.get('b_thres', self.b_thres)
         lim_mem = kwargs.get('lim_mem', self.lim_mem)
+        opa_freq = kwargs.get('opa_freq', self.opa_freq)
+        inverse_direction_function = kwargs.get('inverse_direction_function', None)
         writer = kwargs.get('writer', None)     # For tensorboard
         x = self.downsample(x)
         dev = x.device
@@ -493,6 +496,8 @@ class MDEQNet(nn.Module):
                 writer=writer,
                 b_threshold=b_thres,
                 lim_mem=lim_mem,
+                opa_freq=opa_freq,
+                inverse_direction_function=inverse_direction_function,
             )
 
         y_list = self.iodrop(z_list)
