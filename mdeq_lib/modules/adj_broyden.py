@@ -16,7 +16,17 @@ from termcolor import colored
 from mdeq_lib.modules.broyden import _safe_norm, scalar_search_armijo, matvec, rmatvec, line_search
 
 
-def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
+def adj_broyden(
+        g,
+        x0,
+        threshold,
+        eps,
+        ls=False,
+        name="unknown",
+        adj_type='C',
+        inverse_direction_fun=None,
+        inverse_direction_freq=None,
+):
     """Adjoint Broyden method
 
     Parameters:
@@ -29,6 +39,10 @@ def adj_broyden(g, x0, threshold, eps, ls=False, name="unknown", adj_type='C'):
         - adj_type (str): whether to use the B or C type update from the paper
             "On the local convergence of adjoint Broyden methods" Schlenkrich et al. 2010
             Definition (3). For now only 'C' is implemented, the adjoint Broyden residual update.
+        - inverse_direction_fun (callable): when called with the current solution, it should return the
+            inverse direction to be used for OPA. OPA not used when None.
+        - inverse_direction_freq (int): the frequency at which to use the OPA update. Defaults
+            to None, which means no OPA is used.
     """
     bsz, total_hsize, n_elem = x0.size()
     dev = x0.device
