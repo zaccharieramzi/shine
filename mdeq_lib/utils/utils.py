@@ -87,6 +87,7 @@ def create_logger(
     shine=False,
     fpn=False,
     adjoint_broyden=False,
+    opa=False,
     refine=False,
     fallback=False,
     seed=0,
@@ -109,6 +110,8 @@ def create_logger(
         cfg_name += '_gn'
     if adjoint_broyden:
         cfg_name += '_adjbroyden'
+    if opa:
+        cfg_name += '_opa'
     if refine:
         cfg_name += '_ref'
     if fallback:

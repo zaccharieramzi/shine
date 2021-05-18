@@ -102,6 +102,7 @@ def train_classifier(
     gradient_correl=False,
     gradient_ratio=False,
     adjoint_broyden=False,
+    opa=False,
     refine=False,
     fallback=False,
     save_at=None,
@@ -133,6 +134,7 @@ def train_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         adjoint_broyden=adjoint_broyden,
+        opa=opa,
         refine=refine,
         fallback=fallback,
     )
@@ -288,7 +290,7 @@ def train_classifier(
 
         # train for one epoch
         train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
-              final_output_dir, tb_log_dir, writer_dict, topk=topk)
+              final_output_dir, tb_log_dir, writer_dict, topk=topk, opa=opa)
         torch.cuda.empty_cache()
 
         # evaluate on validation set

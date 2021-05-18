@@ -40,6 +40,7 @@ def evaluate_classifier(
     n_samples=None,
     seed=0,
     adjoint_broyden=False,
+    opa=False,
     use_group_norm=False,
     check_contract=False,
     n_iter=20,
@@ -63,6 +64,7 @@ def evaluate_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         adjoint_broyden=adjoint_broyden,
+        opa=opa,
         refine=refine,
         fallback=fallback,
     )

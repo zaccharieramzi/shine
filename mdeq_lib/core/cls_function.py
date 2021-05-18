@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
-          output_dir, tb_log_dir, writer_dict, topk=(1,5)):
+          output_dir, tb_log_dir, writer_dict, topk=(1,5), opa=False):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -40,7 +40,16 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
         #target = target - 1 # Specific for imagenet
 
         # compute output
-        output = model(input, train_step=(lr_scheduler._step_count-1), writer=writer_dict['writer'])
+        if opa:
+            add_kwargs = {'y': target}
+        else:
+            add_kwargs = {}
+        output = model(
+            input,
+            train_step=(lr_scheduler._step_count-1),
+            writer=writer_dict['writer'],
+            **add_kwargs,
+        )
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
