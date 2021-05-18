@@ -453,6 +453,17 @@ class MDEQNet(nn.Module):
 
         return MDEQModule(num_branches, block_type, num_blocks, num_channels, fuse_method, dropout=dropout)
 
+    def _debug_build_fake_deq_input(self, x):
+        x = self.downsample(x)
+        dev = x.device
+        x_list = [self.stage0(x) if self.stage0 else x]
+        for i in range(1, self.num_branches):
+            bsz, _, H, W = x_list[-1].shape
+            x_list.append(torch.zeros(bsz, self.num_channels[i], H//2, W//2).to(dev))   # ... and the rest are all zeros
+
+        z_list = [torch.zeros_like(elem) for elem in x_list]
+        return z_list, x_list
+
     def _forward(self, x, train_step=-1, **kwargs):
         """
         The core MDEQ module. In the starting phase, we can (optionally) enter a shallow stacked f_\theta training mode
