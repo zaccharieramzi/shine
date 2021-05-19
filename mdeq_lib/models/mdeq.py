@@ -215,8 +215,6 @@ class MDEQClsNet(MDEQNet):
         y_est_tmp = [y.clone().detach().requires_grad_() for y in y_est]
         with torch.enable_grad():
             loss = self.criterion(self.apply_classification_head(y_est_tmp), true_y)
-        loss.backward()
-        dl_dyest = y_est.grad
         return dl_dyest
 
     def forward(self, x, train_step=0, **kwargs):
