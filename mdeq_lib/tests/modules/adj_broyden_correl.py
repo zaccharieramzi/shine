@@ -155,5 +155,5 @@ def adj_broyden_correl(opa, n_runs=1):
 
 
 if __name__ == '__main__':
-    adj_broyden_correl(False)
-    adj_broyden_correl(True)
+    print(adj_broyden_correl(False))
+    print(adj_broyden_correl(True))
