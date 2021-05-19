@@ -153,3 +153,8 @@ def adj_broyden_correl(opa, n_runs=1):
                 inv_quality_results[direction][method]['ratio'].append(ratio.item())
         y.backward(torch.zeros_like(true_inv), retain_graph=False)
     return inv_quality_results
+
+
+if __name__ == '__main__':
+    adj_broyden_correl(False)
+    adj_broyden_correl(True)
