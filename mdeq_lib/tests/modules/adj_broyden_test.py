@@ -78,4 +78,5 @@ def test_adj_broyden(opa):
         normalize,
     ])
     train_dataset = datasets.ImageFolder(traindir, transform_train)
-    model(train_dataset[0].cuda())
+    input, target = train_dataset[0]
+    model(input.cuda(), train_step=int(1e9), y=target.cuda())
