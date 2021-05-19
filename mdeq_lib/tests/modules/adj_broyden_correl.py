@@ -16,6 +16,11 @@ from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.utils import create_logger
 
 
+plt.style.use(['science'])
+plt.rcParams['font.size'] = 8
+plt.rcParams['xtick.labelsize'] = 6
+plt.rcParams['ytick.labelsize'] = 6
+
 def setup_model(opa=False):
     seed = 42
     restart_from = 50
