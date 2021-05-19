@@ -230,6 +230,7 @@ def present_results(inv_quality_results, opa=False):
 
 
 if __name__ == '__main__':
+    torch.multiprocessing.set_start_method('spawn')
     n_runs = 100
     save_results = True
     reload_results = True
