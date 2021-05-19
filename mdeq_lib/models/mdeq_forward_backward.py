@@ -45,7 +45,7 @@ class MDEQWrapper(DEQModule2d):
         lim_mem = kwargs.get('lim_mem', 27)
         writer = kwargs.get('writer', None)
         opa_freq = kwargs.get('opa_freq', 5)
-        inverse_direction_function = kwargs.get('inverse_direction_function', None)
+        loss_function = kwargs.get('loss_function', None)
 
         if u is None:
             raise ValueError("Input injection is required.")
@@ -59,7 +59,7 @@ class MDEQWrapper(DEQModule2d):
             train_step,
             writer,
             opa_freq,
-            inverse_direction_function,
+            loss_function,
             lim_mem,
         )
         new_z1 = list(forward_out[:-3])

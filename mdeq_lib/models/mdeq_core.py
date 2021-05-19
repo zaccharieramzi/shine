@@ -477,7 +477,7 @@ class MDEQNet(nn.Module):
         b_thres = kwargs.get('b_thres', self.b_thres)
         lim_mem = kwargs.get('lim_mem', self.lim_mem)
         opa_freq = kwargs.get('opa_freq', self.opa_freq)
-        inverse_direction_function = kwargs.get('inverse_direction_function', None)
+        loss_function = kwargs.get('loss_function', None)
         writer = kwargs.get('writer', None)     # For tensorboard
 
         x_list, z_list = self.feature_extraction(x)
@@ -502,7 +502,7 @@ class MDEQNet(nn.Module):
                 b_threshold=b_thres,
                 lim_mem=lim_mem,
                 opa_freq=opa_freq,
-                inverse_direction_function=inverse_direction_function,
+                loss_function=loss_function,
             )
 
         y_list = self.iodrop(z_list)

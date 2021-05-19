@@ -66,12 +66,18 @@ class DEQFunc2d(Function):
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z1]
         lim_mem = args[-1]
         args = args[:-1]
-        threshold, train_step, writer, opa_freq, inverse_direction_fun = args[-5:]
+        threshold, train_step, writer, opa_freq, loss_function = args[-5:]
         if adjoint:
             new_u = [elem.clone().detach() for elem in u]
             broyden_fun = adj_broyden
-            if inverse_direction_fun is not None:
-                inverse_direction_fun_vec = lambda x: DEQFunc2d.list2vec(inverse_direction_fun(DEQFunc2d.vec2list(x, cutoffs)))
+            if loss_function is not None:
+                def inverse_direction_fun_vec(x):
+                    x_temp = x.clone().detach().requires_grad_()
+                    x_list = DEQFunc2d.vec2list(x, cutoffs)
+                    loss = loss_function(x_list)
+                    loss.backward()
+                    dl_dx = x_temp.grad
+                    return dl_dx
             else:
                 inverse_direction_fun_vec = None
             add_kwargs = {

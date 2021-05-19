@@ -211,7 +211,7 @@ class MDEQClsNet(MDEQNet):
         y = self.classifier(y)
         return y
 
-    def get_fixed_point_loss_grad(self, y_est, true_y):
+    def get_fixed_point_loss(self, y_est, true_y):
         y_est_tmp = [y.clone().detach().requires_grad_() for y in y_est]
         with torch.enable_grad():
             loss = self.criterion(self.apply_classification_head(y_est_tmp), true_y)
@@ -222,8 +222,8 @@ class MDEQClsNet(MDEQNet):
     def forward(self, x, train_step=0, **kwargs):
         if self.opa:
             true_y = kwargs.get('y', None)
-            inverse_direction_function = lambda y_est: self.get_fixed_point_loss_grad(y_est, true_y)
-            kwargs['inverse_direction_function'] = inverse_direction_function
+            loss_function = lambda y_est: self.get_fixed_point_loss(y_est, true_y)
+            kwargs['loss_function'] = loss_function
         y_list = self._forward(x, train_step, **kwargs)
         y = self.apply_classification_head(y_list)
         return y
