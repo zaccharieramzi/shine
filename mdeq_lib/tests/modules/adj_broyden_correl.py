@@ -164,14 +164,15 @@ def present_results(inv_quality_results):
 
 
 if __name__ == '__main__':
+    n_runs = 10
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     print('='*20)
     print('Without OPA')
-    inv_quality_results = adj_broyden_correl(False)
+    inv_quality_results = adj_broyden_correl(False, n_runs)
     present_results(inv_quality_results)
     print('='*20)
     print('With OPA')
-    inv_quality_results = adj_broyden_correl(True)
+    inv_quality_results = adj_broyden_correl(True, n_runs)
     present_results(inv_quality_results)
     print('='*20)
