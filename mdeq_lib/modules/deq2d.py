@@ -71,10 +71,12 @@ class DEQFunc2d(Function):
             new_u = [elem.clone().detach() for elem in u]
             broyden_fun = adj_broyden
             if inverse_direction_fun is not None:
-                inverse_direction_fun = lambda x: DEQFunc2d.list2vec(inverse_direction_fun(DEQFunc2d.vec2list(x, cutoffs)))
+                inverse_direction_fun_vec = lambda x: DEQFunc2d.list2vec(inverse_direction_fun(DEQFunc2d.vec2list(x, cutoffs)))
+            else:
+                inverse_direction_fun_vec = None
             add_kwargs = {
                 'inverse_direction_freq': opa_freq,
-                'inverse_direction_fun': inverse_direction_fun,
+                'inverse_direction_fun': inverse_direction_fun_vec,
             }
         else:
             new_u = u
