@@ -231,9 +231,9 @@ def present_results(inv_quality_results, opa=False):
 
 if __name__ == '__main__':
     n_runs = 100
-    save_results = False
-    reload_results = False
-    plot_results = True
+    save_results = True
+    reload_results = True
+    plot_results = False
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     print('='*20)
