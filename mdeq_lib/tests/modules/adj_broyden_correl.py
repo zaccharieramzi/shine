@@ -154,6 +154,24 @@ def adj_broyden_correl(opa, n_runs=1):
     return inv_quality_results
 
 
+def present_results(inv_quality_results):
+    for direction, direction_results in inv_quality_results.items():
+        print(direction)
+        for method, method_results in direction_results.items():
+            median_correl = torch.median(method_results['correl'])
+            median_ratio = torch.median(method_results['ratio'])
+            print(method, median_correl.item(), median_ratio.item())
+
+
 if __name__ == '__main__':
-    print(adj_broyden_correl(False))
-    print(adj_broyden_correl(True))
+    print('Ratio is true inv over approx inv')
+    print('Results are presented: method, median correl, median ratio')
+    print('='*20)
+    print('Without OPA')
+    inv_quality_results = adj_broyden_correl(False)
+    present_results(inv_quality_results)
+    print('='*20)
+    print('With OPA')
+    inv_quality_results = adj_broyden_correl(True)
+    present_results(inv_quality_results)
+    print('='*20)
