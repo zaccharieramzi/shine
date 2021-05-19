@@ -212,8 +212,7 @@ class MDEQClsNet(MDEQNet):
         return y
 
     def get_fixed_point_loss(self, y_est, true_y):
-        with torch.enable_grad():
-            loss = self.criterion(self.apply_classification_head(y_est), true_y)
+        loss = self.criterion(self.apply_classification_head(y_est), true_y)
         return loss
 
     def forward(self, x, train_step=0, **kwargs):
