@@ -40,6 +40,8 @@ def evaluate_classifier(
     fallback=False,
     n_samples=None,
     seed=0,
+    adjoint_broyden=False,
+    opa=False,
     use_group_norm=False,
     check_contract=False,
     n_iter=20,
@@ -62,6 +64,8 @@ def evaluate_classifier(
         fpn=fpn,
         seed=seed,
         use_group_norm=use_group_norm,
+        adjoint_broyden=adjoint_broyden,
+        opa=opa,
         refine=refine,
         n_refine=n_refine,
         fallback=fallback,
@@ -76,7 +80,7 @@ def evaluate_classifier(
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
     model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
-        config, shine=shine, fpn=fpn, refine=refine, fallback=fallback)
+        config, shine=shine, fpn=fpn, refine=refine, fallback=fallback, adjoint_broyden=adjoint_broyden)
 
     dump_input = torch.rand(
         (1, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0])

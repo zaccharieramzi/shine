@@ -34,9 +34,9 @@ class VariationalHidDropout2d(nn.Module):
         if not self.training or self.dropout == 0:
             return x
         assert self.mask is not None, "You need to reset mask before using VariationalHidDropout"
-        return self.mask.expand_as(x) * x 
+        return self.mask.expand_as(x) * x
 
-    
+
 class VariationalHidDropout2dList(nn.Module):
     def __init__(self, dropout=0.0, spatial=True):
         """
@@ -51,7 +51,7 @@ class VariationalHidDropout2dList(nn.Module):
     def reset_mask(self, xs):
         dropout = self.dropout
         spatial = self.spatial
-        
+
         self.mask = []
         for x in xs:
             # x has dimension (N, C, H, W)
@@ -68,8 +68,8 @@ class VariationalHidDropout2dList(nn.Module):
             return xs
         assert self.mask is not None and len(self.mask) > 0, "You need to reset mask before using VariationalHidDropoutList"
         return [self.mask[i].expand_as(x) * x for i, x in enumerate(xs)]
-    
-    
+
+
 def _norm(p, dim):
     """Computes the norm over all dimensions except dim"""
     if dim is None:
@@ -136,6 +136,8 @@ class WeightNorm(object):
         # a lot of intermediate memory by just recomputing once (at the beginning of first call).
         pass
 
+def reset_wn(wn, module):
+    setattr(module, wn.name, wn.compute_weight(module))
 
 def weight_norm(module, names, dim=0):
     fn = WeightNorm.apply(module, names, dim)

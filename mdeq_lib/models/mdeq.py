@@ -117,7 +117,7 @@ class BottleneckGroup(nn.Module):
 
 
 class MDEQClsNet(MDEQNet):
-    def __init__(self, cfg, **kwargs):
+    def __init__(self, cfg, opa=False, **kwargs):
         """
         Build an MDEQ Classification model with the given hyperparameters
         """
@@ -131,6 +131,9 @@ class MDEQClsNet(MDEQNet):
         # Classification Head
         self.incre_modules, self.downsamp_modules, self.final_layer = self._make_head(self.num_channels)
         self.classifier = nn.Linear(self.final_chansize, self.num_classes)
+        # criterion setting
+        self.criterion = nn.CrossEntropyLoss().cuda()
+        self.opa = opa
 
     def _make_head(self, pre_stage_channels):
         """
@@ -193,9 +196,7 @@ class MDEQClsNet(MDEQNet):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, train_step=0, **kwargs):
-        y_list = self._forward(x, train_step, **kwargs)
-
+    def apply_classification_head(self, y_list):
         # Classification Head
         y = self.incre_modules[0](y_list[0])
         for i in range(len(self.downsamp_modules)):
@@ -208,7 +209,19 @@ class MDEQClsNet(MDEQNet):
         else:
             y = F.avg_pool2d(y, kernel_size=y.size()[2:]).view(y.size(0), -1)
         y = self.classifier(y)
+        return y
 
+    def get_fixed_point_loss(self, y_est, true_y):
+        loss = self.criterion(self.apply_classification_head(y_est), true_y)
+        return loss
+
+    def forward(self, x, train_step=0, **kwargs):
+        if self.opa:
+            true_y = kwargs.get('y', None)
+            loss_function = lambda y_est: self.get_fixed_point_loss(y_est, true_y)
+            kwargs['loss_function'] = loss_function
+        y_list = self._forward(x, train_step, **kwargs)
+        y = self.apply_classification_head(y_list)
         return y
 
     def init_weights(self, pretrained='',):
