@@ -231,7 +231,7 @@ if __name__ == '__main__':
     else:
         with open(res_name, 'rb') as f:
             inv_quality_results = pickle.load(f)
-    if present_results:
+    if plot_results:
         present_results(inv_quality_results, opa=False)
     print('='*20)
     print('With OPA')
@@ -244,6 +244,6 @@ if __name__ == '__main__':
     else:
         with open(res_name, 'rb') as f:
             inv_quality_results = pickle.load(f)
-    if present_results:
+    if plot_results:
         present_results(inv_quality_results, opa=True)
     print('='*20)
