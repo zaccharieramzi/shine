@@ -13,7 +13,7 @@ from mdeq_lib.config import config
 from mdeq_lib.modules.adj_broyden import adj_broyden
 from mdeq_lib.modules.broyden import broyden, rmatvec
 from mdeq_lib.modules.deq2d import DEQFunc2d
-from mdeq_lib.training.cls_train import update_config_w_args
+from mdeq_lib.training.cls_train import update_config_w_args, worker_init_fn, partial
 from mdeq_lib.utils.utils import create_logger
 
 
@@ -89,19 +89,28 @@ def adj_broyden_correl(opa, n_runs=1):
         normalize,
     ])
     train_dataset = datasets.ImageFolder(traindir, transform_train)
-    input, target = train_dataset[0]
-    x_list, z_list = model.feature_extraction(input[None].cuda())
-    # fixed point solving
-    x_list = [x.clone().detach() for x in x_list]
-    cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
-    args = (27, int(1e9), None)
-    nelem = sum([elem.nelement() for elem in z_list])
-    eps = 1e-5 * np.sqrt(nelem)
-    z1_est = DEQFunc2d.list2vec(z_list)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=32,
+        shuffle=True,
+        num_workers=10,
+        pin_memory=True,
+        worker_init_fn=partial(worker_init_fn, seed=42),
+    )
     inv_quality_results = {dir: {
         k: {'correl': [], 'ratio': []} for k in ['shine', 'fpn']
     } for dir in ['prescribed', 'random']}
+    iter_loader = iter(train_loader)
     for i_run in range(n_runs):
+        input, _ = next(iter_loader)
+        x_list, z_list = model.feature_extraction(input.cuda())
+        # fixed point solving
+        x_list = [x.clone().detach() for x in x_list]
+        cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
+        args = (27, int(1e9), None)
+        nelem = sum([elem.nelement() for elem in z_list])
+        eps = 1e-5 * np.sqrt(nelem)
+        z1_est = DEQFunc2d.list2vec(z_list)
         g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
         directions_dir = {
             'random': torch.randn(z1_est.shape),
