@@ -1,6 +1,7 @@
 import os
 import random
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -155,12 +156,48 @@ def adj_broyden_correl(opa, n_runs=1):
 
 
 def present_results(inv_quality_results):
+    fig = plt.figure(figsize=(5.5, 2.1))
+    g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
+    styles = {
+        'prescribed': dict(color='C2', marker='o'),
+        'random': dict(color='C0', marker='^'),
+    }
+    naming = {
+        'prescribed': 'Additional',
+        'random': 'Random',
+    }
     for direction, direction_results in inv_quality_results.items():
         print(direction)
-        for method, method_results in direction_results.items():
+        for i_method, (method, method_results) in enumerate(direction_results.items()):
+            ax = fig.add_subplot(g[0, i_method])
+            ax.scatter(
+                # 0 rdiff, 1 ratio, 2 correl
+                method_results['ratio'],
+                method_results['correl'],
+                label=naming[direction],
+                s=3.,
+                **styles[direction],
+            )
             median_correl = np.median(method_results['correl'])
             median_ratio = np.median(method_results['ratio'])
             print(method, median_correl, median_ratio)
+    handles, labels = ax.get_legend_handles_labels()
+    ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
+    ax.set_xlabel(r'$\frac{\|a \|}{\| b \|}$')
+    ### legend
+    ax_legend = fig.add_subplot(g[0, -1])
+    legend = ax_legend.legend(
+        handles,
+        labels,
+        loc='center',
+        ncol=1,
+        handlelength=1.5,
+        handletextpad=.2,
+        title=r'\textbf{Direction}',
+    )
+    ax_legend.axis('off')
+    plt.savefig('adj_broyden_inversion_opa_scatter.pdf', dpi=300);
+
 
 
 if __name__ == '__main__':
