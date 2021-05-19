@@ -106,8 +106,8 @@ def adj_broyden_correl(opa, n_runs=1):
             threshold=27,
             eps=eps,
             name="forward",
-            inverse_direction_freq=1,
-            inverse_direction_fun=lambda x: directions_dir['prescribed'],
+            inverse_direction_freq=1 if opa else None,
+            inverse_direction_fun=lambda x: directions_dir['prescribed'] if opa else None,
         )
         z1_est = result_info['result']
         Us = result_info['Us']
