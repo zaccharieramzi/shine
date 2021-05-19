@@ -212,7 +212,7 @@ class MDEQClsNet(MDEQNet):
         return y
 
     def get_fixed_point_loss_grad(self, y_est, true_y):
-        y_est_tmp = y_est.clone().detach().requires_grad_()
+        y_est_tmp = [y.clone().detach().requires_grad_() for y in y_est]
         with torch.enable_grad():
             loss = self.criterion(true_y, self.apply_classification_head(y_est_tmp))
         loss.backward()
