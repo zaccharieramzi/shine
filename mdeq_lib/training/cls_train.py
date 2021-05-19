@@ -156,6 +156,7 @@ def train_classifier(
         adjoint_broyden=adjoint_broyden,
         refine=refine,
         fallback=fallback,
+        opa=opa,
     ).cuda()
 
     dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
