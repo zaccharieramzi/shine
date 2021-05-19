@@ -173,6 +173,9 @@ def adj_broyden_correl(opa, n_runs=1):
 def present_results(inv_quality_results, opa=False):
     fig = plt.figure(figsize=(5.5, 2.1))
     g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
+    for i in range(3):
+        ax = fig.add_subplot(g[0, i])
+    allaxes = fig.get_axes()
     styles = {
         'prescribed': dict(color='C2', marker='o'),
         'random': dict(color='C0', marker='^'),
@@ -182,13 +185,13 @@ def present_results(inv_quality_results, opa=False):
         'random': 'Random',
     }
     method_naming = {
-        'shine': 'SHINE with Adjoint Broyden (ours)',
+        'shine': 'SHINE with Adjoint Broyden',
         'fpn': 'Jacobian-Free method',
     }
     for direction, direction_results in inv_quality_results.items():
         print(direction)
         for i_method, (method, method_results) in enumerate(direction_results.items()):
-            ax = fig.add_subplot(g[0, i_method])
+            ax = allaxes[i_method]
             ax.scatter(
                 # 0 rdiff, 1 ratio, 2 correl
                 method_results['ratio'],
@@ -198,14 +201,18 @@ def present_results(inv_quality_results, opa=False):
                 **styles[direction],
             )
             ax.set_title(method_naming[method])
+            ax.set_y_lim([0.74, 0.94])
+            ax.set_x_lim([1.1, 1.4])
+            if method == 'shine':
+                ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
+            ax.set_xlabel(r'$\|a \|/\| b \|$')
             median_correl = np.median(method_results['correl'])
             median_ratio = np.median(method_results['ratio'])
             print(method, median_correl, median_ratio)
     handles, labels = ax.get_legend_handles_labels()
-    ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
-    ax.set_xlabel(r'$\frac{\|a \|}{\| b \|}$')
+
     ### legend
-    ax_legend = fig.add_subplot(g[0, -1])
+    ax_legend = allaxes[-1]
     legend = ax_legend.legend(
         handles,
         labels,
@@ -224,9 +231,9 @@ def present_results(inv_quality_results, opa=False):
 
 if __name__ == '__main__':
     n_runs = 100
-    save_results = True
-    reload_results = True
-    plot_results = False
+    save_results = False
+    reload_results = False
+    plot_results = True
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     print('='*20)
