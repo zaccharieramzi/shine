@@ -7,6 +7,7 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+import mdeq_lib.models as models
 from mdeq_lib.config import config
 from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.utils import create_logger
@@ -35,7 +36,6 @@ def setup_model(opa=False):
         model_size=model_size,
         use_group_norm=use_group_norm,
     )
-    torch.multiprocessing.set_start_method('spawn')
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
