@@ -73,7 +73,7 @@ def adj_broyden(
             inverse_direction = inverse_direction_fun(x_est)
             e = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], inverse_direction)
             e = e / torch.norm(e) * torch.norm(update)
-            gx.backward(e)
+            gx.backward(e, retain_graph=False)
             b = x_temp.grad
             a = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], e)
             b = rmatvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], b)
