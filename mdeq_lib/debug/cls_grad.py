@@ -99,6 +99,8 @@ def train_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
+    adjoint_broyden=False,
+    opa=False,
     gradient_correl=False,
     gradient_ratio=False,
     save_at=None,
@@ -131,6 +133,8 @@ def train_classifier(
         'train',
         shine=shine,
         fpn=fpn,
+        adjoint_broyden=adjoint_broyden,
+        opa=opa,
         seed=seed,
         use_group_norm=use_group_norm,
     )
@@ -147,6 +151,8 @@ def train_classifier(
         config,
         shine=shine,
         fpn=fpn,
+        adjoint_broyden=adjoint_broyden,
+        opa=opa,
         gradient_correl=gradient_correl,
         gradient_ratio=gradient_ratio,
     ).cuda()
@@ -255,6 +261,8 @@ def train_classifier(
         if compute_partial:
             model.deq.shine = shine
             model.deq.fpn = fpn
+            model.deq.adjoint_broyden = adjoint_broyden
+            model.opa = opa
             model.deq.gradient_ratio = gradient_ratio
             model.deq.gradient_correl = gradient_correl
             if shine:
@@ -264,7 +272,11 @@ def train_classifier(
             accel_grad_name += '_grad_{0}_{1}.pt'
             for f_thres in f_thres_range:
                 model.f_thres = f_thres
-                output = model(input.cuda(), train_step=-(i_data+1), writer=None)
+                if opa:
+                    add_kwargs = {'y': target}
+                else:
+                    add_kwargs = {}
+                output = model(input.cuda(), train_step=int(1e9)+(i_data+1), writer=None, **add_kwargs)
                 target = target.cuda(non_blocking=True)
 
                 loss = criterion(output, target)
@@ -284,6 +296,8 @@ def train_classifier(
             # model.f_thres = 30
             model.deq.shine = False
             model.deq.fpn = False
+            model.deq.adjoint_broyden = False
+            model.opa = False
             model.deq.gradient_ratio = False
             model.deq.gradient_correl = False
             for f_thres in f_thres_range:
