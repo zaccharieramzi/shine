@@ -171,6 +171,10 @@ def present_results(inv_quality_results, opa=False):
         'prescribed': 'Additional',
         'random': 'Random',
     }
+    method_naming = {
+        'shine': 'SHINE with Adjoint Broyden (ours)',
+        'fpn': 'Jacobian-Free method',
+    }
     for direction, direction_results in inv_quality_results.items():
         print(direction)
         for i_method, (method, method_results) in enumerate(direction_results.items()):
@@ -183,6 +187,7 @@ def present_results(inv_quality_results, opa=False):
                 s=3.,
                 **styles[direction],
             )
+            ax.set_title(method_naming[method])
             median_correl = np.median(method_results['correl'])
             median_ratio = np.median(method_results['ratio'])
             print(method, median_correl, median_ratio)
