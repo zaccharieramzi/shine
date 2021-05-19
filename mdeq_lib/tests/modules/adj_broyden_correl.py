@@ -84,7 +84,7 @@ def adj_broyden_correl(opa, n_runs=1):
     ])
     train_dataset = datasets.ImageFolder(traindir, transform_train)
     input, target = train_dataset[0]
-    x_list, z_list = model.feature_extraction(input.cuda())
+    x_list, z_list = model.feature_extraction(input[None].cuda())
     # fixed point solving
     x_list = [x.clone().detach() for x in x_list]
     cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
