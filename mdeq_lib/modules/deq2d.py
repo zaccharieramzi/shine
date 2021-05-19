@@ -72,10 +72,9 @@ class DEQFunc2d(Function):
             broyden_fun = adj_broyden
             if loss_function is not None:
                 def inverse_direction_fun_vec(x):
-                    import ipdb; ipdb.set_trace()
                     x_temp = x.clone().detach().requires_grad_()
                     with torch.enable_grad():
-                        x_list = DEQFunc2d.vec2list(x, cutoffs)
+                        x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
                         loss = loss_function(x_list)
                     loss.backward()
                     dl_dx = x_temp.grad
