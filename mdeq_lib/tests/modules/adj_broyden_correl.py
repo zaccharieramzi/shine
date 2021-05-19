@@ -158,9 +158,9 @@ def present_results(inv_quality_results):
     for direction, direction_results in inv_quality_results.items():
         print(direction)
         for method, method_results in direction_results.items():
-            median_correl = torch.median(method_results['correl'])
-            median_ratio = torch.median(method_results['ratio'])
-            print(method, median_correl.item(), median_ratio.item())
+            median_correl = np.median(method_results['correl'])
+            median_ratio = np.median(method_results['ratio'])
+            print(method, median_correl, median_ratio)
 
 
 if __name__ == '__main__':
