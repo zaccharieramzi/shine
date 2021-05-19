@@ -214,7 +214,7 @@ def present_results(inv_quality_results, opa=False):
 
 
 if __name__ == '__main__':
-    n_runs = 10
+    n_runs = 100
     save_results = True
     reload_results = True
     plot_results = False
