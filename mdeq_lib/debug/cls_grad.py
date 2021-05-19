@@ -267,6 +267,10 @@ def train_classifier(
             model.deq.gradient_correl = gradient_correl
             if shine:
                 accel_grad_name = 'shine'
+                if adjoint_broyden:
+                    accel_grad_name += '_adjbroyden'
+                    if opa:
+                        accel_grad_name += '_opa'
             elif fpn:
                 accel_grad_name = 'fpn'
             accel_grad_name += '_grad_{0}_{1}.pt'
