@@ -73,7 +73,7 @@ class DEQFunc2d(Function):
             if loss_function is not None:
                 def inverse_direction_fun_vec(x):
                     x_temp = x.clone().detach().requires_grad_()
-                    with torch.enable_grad()
+                    with torch.enable_grad():
                         x_list = DEQFunc2d.vec2list(x, cutoffs)
                         loss = loss_function(x_list)
                     loss.backward()
