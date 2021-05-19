@@ -201,8 +201,8 @@ def present_results(inv_quality_results, opa=False):
                 **styles[direction],
             )
             ax.set_title(method_naming[method])
-            ax.set_y_lim([0.74, 0.94])
-            ax.set_x_lim([1.1, 1.4])
+            ax.set_ylim([0.74, 0.94])
+            ax.set_xlim([1.1, 1.4])
             if method == 'shine':
                 ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
             ax.set_xlabel(r'$\|a \|/\| b \|$')
