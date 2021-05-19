@@ -6,6 +6,7 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+import mdeq_lib.models as models
 from mdeq_lib.config import config
 from mdeq_lib.modules.adj_broyden import adj_broyden
 from mdeq_lib.modules.broyden import broyden, rmatvec
