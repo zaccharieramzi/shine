@@ -5,11 +5,12 @@ import numpy as np
 import pytest
 import torch
 import torchvision.transforms as transforms
+import torchvision.datasets as datasets
 
 from mdeq_lib.config import config
-from mdeq_lib.config import update_config
-from mdeq_lib.modules.adj_broyden import adj_broyden
 from mdeq_lib.training.cls_train import update_config_w_args
+from mdeq_lib.utils.utils import create_logger
+
 
 def setup_model(opa=False):
     seed = 42
@@ -34,7 +35,6 @@ def setup_model(opa=False):
         model_size=model_size,
         use_group_norm=use_group_norm,
     )
-    print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
