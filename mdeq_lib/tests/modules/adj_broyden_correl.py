@@ -1,14 +1,18 @@
 import os
+import random
 
 import numpy as np
 import torch
 import torchvision.transforms as transforms
+import torchvision.datasets as datasets
 
 from mdeq_lib.config import config
-from mdeq_lib.config import update_config
 from mdeq_lib.modules.adj_broyden import adj_broyden
+from mdeq_lib.modules.broyden import broyden, rmatvec
 from mdeq_lib.modules.deq2d import DEQFunc2d
 from mdeq_lib.training.cls_train import update_config_w_args
+from mdeq_lib.utils.utils import create_logger
+
 
 def setup_model(opa=False):
     seed = 42
@@ -33,7 +37,6 @@ def setup_model(opa=False):
         model_size=model_size,
         use_group_norm=use_group_norm,
     )
-    print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
@@ -97,7 +100,7 @@ def adj_broyden_correl(opa, n_runs=1):
             'random': torch.randn(z1_est.shape),
             'prescribed': torch.randn(z1_est.shape),
         }
-        result_info = broyden_fun(
+        result_info = adj_broyden(
             g,
             z1_est,
             threshold=27,
@@ -133,8 +136,8 @@ def adj_broyden_correl(opa, n_runs=1):
             )
             true_inv = result_info_inversion['result']
             inv_dir = {
-                'fpn': direction,
-                'shine': - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad),
+                'fpn': directions_dir[direction],
+                'shine': - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], directions_dir[direction]),
             }
             for method in inv_quality_results[direction].keys():
                 approx_inv = inv_dir[method]
