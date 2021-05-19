@@ -155,7 +155,7 @@ def adj_broyden_correl(opa, n_runs=1):
     return inv_quality_results
 
 
-def present_results(inv_quality_results):
+def present_results(inv_quality_results, opa=False):
     fig = plt.figure(figsize=(5.5, 2.1))
     g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
     styles = {
@@ -196,8 +196,10 @@ def present_results(inv_quality_results):
         title=r'\textbf{Direction}',
     )
     ax_legend.axis('off')
-    plt.savefig('adj_broyden_inversion_opa_scatter.pdf', dpi=300);
-
+    if opa:
+        plt.savefig('adj_broyden_inversion_opa_scatter.pdf', dpi=300)
+    else:
+        plt.savefig('adj_broyden_inversion_scatter.pdf', dpi=300)
 
 
 if __name__ == '__main__':
@@ -207,9 +209,9 @@ if __name__ == '__main__':
     print('='*20)
     print('Without OPA')
     inv_quality_results = adj_broyden_correl(False, n_runs)
-    present_results(inv_quality_results)
+    present_results(inv_quality_results, opa=False)
     print('='*20)
     print('With OPA')
     inv_quality_results = adj_broyden_correl(True, n_runs)
-    present_results(inv_quality_results)
+    present_results(inv_quality_results, opa=True)
     print('='*20)
