@@ -291,7 +291,7 @@ def train_classifier(
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
-        num_workers=0,
+        num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
         sampler=train_sampler,
@@ -299,7 +299,7 @@ def train_classifier(
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=config.TEST.BATCH_SIZE_PER_GPU,
-        num_workers=0,
+        num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
         sampler=valid_sampler,
