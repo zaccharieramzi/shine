@@ -322,7 +322,7 @@ def train_classifier(
                 last_epoch-1)
 
     # Training code
-    model.module.deq.ddp = model
+    model.module.deq.no_sync = model.no_sync
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
         topk = (1,5) if dataset_name == 'imagenet' else (1,)
         train_sampler.set_epoch(epoch)

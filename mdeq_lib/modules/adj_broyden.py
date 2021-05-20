@@ -26,7 +26,7 @@ def adj_broyden(
         adj_type='C',
         inverse_direction_fun=None,
         inverse_direction_freq=None,
-        ddp=None,
+        no_sync=None,
 ):
     """Adjoint Broyden method
 
@@ -69,7 +69,7 @@ def adj_broyden(
     lowest = new_objective
     lowest_xest, lowest_gx, lowest_step = x_est, gx, nstep
     opa = inverse_direction_fun is not None and inverse_direction_freq is not None
-    with ddp.no_sync():
+    with no_sync():
         while new_objective >= eps and nstep < threshold:
             if opa and nstep > 1 and nstep % inverse_direction_freq == 0:
                 inverse_direction = inverse_direction_fun(x_est)
