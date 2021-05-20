@@ -37,6 +37,7 @@ class MDEQWrapper(DEQModule2d):
             refine=refine,
             fallback=fallback,
         )
+        self.ddp = None
 
     def forward(self, z1, u, **kwargs):
         train_step = kwargs.get('train_step', -1)
@@ -60,6 +61,7 @@ class MDEQWrapper(DEQModule2d):
             writer,
             opa_freq,
             loss_function,
+            self.ddp,
             lim_mem,
         )
         new_z1 = list(forward_out[:-3])
