@@ -206,6 +206,7 @@ def train_classifier(
     }
 
     model = DDP(model.to(torch.device('cuda')), device_ids=[local_rank])
+    model.module.deq.ddp = model
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
