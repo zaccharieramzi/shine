@@ -206,7 +206,6 @@ def train_classifier(
     }
 
     model = DDP(model.to(torch.device('cuda')), device_ids=[local_rank])
-    model.module.deq.ddp = model
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
@@ -322,6 +321,7 @@ def train_classifier(
                 last_epoch-1)
 
     # Training code
+    model.module.deq.ddp = model
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
         topk = (1,5) if dataset_name == 'imagenet' else (1,)
         if config.TRAIN.LR_SCHEDULER == 'step':
