@@ -207,7 +207,7 @@ def train_classifier(
     criterion = nn.CrossEntropyLoss().cuda()
     model = FullModel(model, criterion)
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = DDP(model.cuda()), device_ids=[local_rank], output_device=local_rank)
+    model = DDP(model.cuda(), device_ids=[local_rank], output_device=local_rank)
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
