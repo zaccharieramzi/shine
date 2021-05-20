@@ -40,7 +40,7 @@ from mdeq_lib.config.env_config import (
 )
 from mdeq_lib.core.cls_function import train, validate
 from mdeq_lib.utils.modelsummary import get_model_summary
-from mdeq_lib.utils.utils import get_optimizer
+from mdeq_lib.utils.utils import get_optimizer, FullModel
 from mdeq_lib.utils.utils import save_checkpoint
 from mdeq_lib.utils.utils import create_logger
 from termcolor import colored
@@ -184,8 +184,9 @@ def train_classifier(
         opa=opa,
     ).cuda()
 
-    dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
-    logger.info(get_model_summary(model, dump_input))
+    if rank == 0:
+        dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
+        logger.info(get_model_summary(model, dump_input))
 
     if config.TRAIN.MODEL_FILE:
         model.load_state_dict(torch.load(config.TRAIN.MODEL_FILE))
@@ -203,11 +204,13 @@ def train_classifier(
         'valid_global_steps': 0,
     }
 
-    model = DDP(model.to(torch.device('cuda')), device_ids=[local_rank])
+    criterion = nn.CrossEntropyLoss().cuda()
+    model = FullModel(model, criterion)
+    model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    model = DDP(model.cuda()), device_ids=[local_rank], output_device=local_rank)
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda()
 
     optimizer = get_optimizer(config, model)
     lr_scheduler = None
@@ -225,7 +228,7 @@ def train_classifier(
             checkpoint = torch.load(model_state_file)
             last_epoch = checkpoint['epoch']
             best_perf = checkpoint['perf']
-            model.module.load_state_dict(checkpoint['state_dict'])
+            model.module.model.load_state_dict(checkpoint['state_dict'])
 
             # Update weight decay if needed
             checkpoint['optimizer']['param_groups'][0]['weight_decay'] = config.TRAIN.WD
@@ -320,7 +323,7 @@ def train_classifier(
                 last_epoch-1)
 
     # Training code
-    model.module.deq.no_sync = model.no_sync
+    model.module.model.deq.no_sync = model.no_sync
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
         topk = (1,5) if dataset_name == 'imagenet' else (1,)
         train_sampler.set_epoch(epoch)
@@ -354,7 +357,7 @@ def train_classifier(
                 save_checkpoint({
                     'epoch': epoch + 1,
                     'model': config.MODEL.NAME,
-                    'state_dict': model.module.state_dict(),
+                    'state_dict': model.module.model.state_dict(),
                     'perf': perf_indicator,
                     'optimizer': optimizer.state_dict(),
                     'lr_scheduler': lr_scheduler.state_dict(),
