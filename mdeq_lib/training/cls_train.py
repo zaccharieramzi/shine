@@ -20,7 +20,8 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
-import torch.utils.data.distributed
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
@@ -43,6 +44,13 @@ from mdeq_lib.utils.utils import get_optimizer
 from mdeq_lib.utils.utils import save_checkpoint
 from mdeq_lib.utils.utils import create_logger
 from termcolor import colored
+
+try:
+    import idr_torch
+except ModuleNotFoundError:
+    idr_torch_available = False
+else:
+    idr_torch_available = True
 
 
 # Set of argument to pass to different functions
@@ -78,6 +86,10 @@ def update_config_w_args(
             'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / f'MDEQ_{model_size}_Cls.pkl'),
             'TRAIN.PRETRAIN_STEPS', 0,
         ]
+    if idr_torch_available:
+        local_rank = idr_torch.local_rank
+    else:
+        local_rank = 0
     args = Args(
         cfg=str(CONFIG_DIR / dataset / f'cls_mdeq_{model_size}.yaml'),
         logDir=str(LOGS_DIR) + '/',
@@ -85,7 +97,7 @@ def update_config_w_args(
         dataDir=str(data_dir) + '/',
         testModel='',
         percent=1.0,
-        local_rank=0,
+        local_rank=local_rank,
         opts=opts,
     )
     update_config(config, args)
@@ -110,6 +122,21 @@ def train_classifier(
     use_group_norm=False,
     seed=0,
 ):
+    if idr_torch_available:
+        world_size = idr_torch.size
+        rank = idr_torch.rank
+        local_rank = idr_torch.local_rank
+    else:
+        world_size = 1
+        rank = 0
+        local_rank = 0
+    dist.init_process_group(
+        init_method='env://',
+        backend='nccl',
+        world_size=world_size,
+        rank=rank,
+    )
+    torch.cuda.set_device(local_rank)
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -178,8 +205,7 @@ def train_classifier(
         'valid_global_steps': 0,
     }
 
-    gpus = list(config.GPUS)
-    model = nn.DataParallel(model, device_ids=gpus).cuda()
+    model = DDP(model.to(torch.device('cuda')), device_ids=[local_rank])
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
@@ -251,22 +277,33 @@ def train_classifier(
         ])
         train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
         valid_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=False, download=True, transform=transform_valid)
-
+    train_sampler = torch.utils.data.distributed.DistributedSampler(
+        train_dataset,
+        num_replicas=world_size,
+        rank=rank,
+    )
+    valid_sampler = torch.utils.data.distributed.DistributedSampler(
+        valid_dataset,
+        num_replicas=world_size,
+        rank=rank,
+    )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
+        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
         shuffle=True,
         num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
+        sampler=train_sampler,
     )
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus),
+        batch_size=config.TEST.BATCH_SIZE_PER_GPU,
         shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
+        sampler=valid_sampler,
     )
 
     # Learning rate scheduler
@@ -306,23 +343,25 @@ def train_classifier(
         else:
             best_model = False
 
-        logger.info('=> saving checkpoint to {}'.format(final_output_dir))
-        checkpoint_files = ['checkpoint.pth.tar']
-        if save_at is not None and save_at == epoch:
-            checkpoint_files.append(f'checkpoint_{epoch}.pth.tar')
-        for checkpoint_file in checkpoint_files:
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'model': config.MODEL.NAME,
-                'state_dict': model.module.state_dict(),
-                'perf': perf_indicator,
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': lr_scheduler.state_dict(),
-            }, best_model, final_output_dir, filename=checkpoint_file)
+        if rank == 0:
+            logger.info('=> saving checkpoint to {}'.format(final_output_dir))
+            checkpoint_files = ['checkpoint.pth.tar']
+            if save_at is not None and save_at == epoch:
+                checkpoint_files.append(f'checkpoint_{epoch}.pth.tar')
+            for checkpoint_file in checkpoint_files:
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'model': config.MODEL.NAME,
+                    'state_dict': model.module.state_dict(),
+                    'perf': perf_indicator,
+                    'optimizer': optimizer.state_dict(),
+                    'lr_scheduler': lr_scheduler.state_dict(),
+                }, best_model, final_output_dir, filename=checkpoint_file)
 
-    final_model_state_file = os.path.join(final_output_dir,
-                                          'final_state.pth.tar')
-    logger.info('saving final model state to {}'.format(
-        final_model_state_file))
-    torch.save(model.module.state_dict(), final_model_state_file)
-    writer_dict['writer'].close()
+    if rank == 0:
+        final_model_state_file = os.path.join(final_output_dir,
+                                              'final_state.pth.tar')
+        logger.info('saving final model state to {}'.format(
+            final_model_state_file))
+        torch.save(model.module.state_dict(), final_model_state_file)
+        writer_dict['writer'].close()
