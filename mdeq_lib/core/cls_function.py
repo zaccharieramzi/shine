@@ -42,15 +42,15 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
         # measure data loading time
         data_time.update(time.time() - end)
         #target = target - 1 # Specific for imagenet
-
+        target = target.cuda(non_blocking=True)
         # compute output
         if opa:
-            add_kwargs = {'y': target.cuda(non_blocking=True)}
+            add_kwargs = {'y': target}
         else:
             add_kwargs = {}
         loss, output = model(
             input.cuda(non_blocking=True),
-            target.cuda(non_blocking=True),
+            target,
             train_step=(lr_scheduler._step_count-1),
             writer=writer_dict['writer'],
             **add_kwargs,
