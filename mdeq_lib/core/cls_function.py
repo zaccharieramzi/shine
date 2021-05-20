@@ -41,11 +41,11 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
 
         # compute output
         if opa:
-            add_kwargs = {'y': target}
+            add_kwargs = {'y': target.cuda(non_blocking=True)}
         else:
             add_kwargs = {}
         output = model(
-            input,
+            input.cuda(non_blocking=True),
             train_step=(lr_scheduler._step_count-1),
             writer=writer_dict['writer'],
             **add_kwargs,

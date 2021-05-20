@@ -149,7 +149,6 @@ def train_classifier(
         use_group_norm=use_group_norm,
     )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
-    torch.multiprocessing.set_start_method('spawn')
 
     logger, final_output_dir, tb_log_dir = create_logger(
         config,
@@ -292,7 +291,7 @@ def train_classifier(
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
-        num_workers=config.WORKERS,
+        num_workers=0,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
         sampler=train_sampler,
@@ -300,7 +299,7 @@ def train_classifier(
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=config.TEST.BATCH_SIZE_PER_GPU,
-        num_workers=config.WORKERS,
+        num_workers=0,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
         sampler=valid_sampler,
