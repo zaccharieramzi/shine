@@ -280,17 +280,19 @@ def train_classifier(
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         train_dataset,
         num_replicas=world_size,
+        shuffle=True,
+        seed=seed,
         rank=rank,
     )
     valid_sampler = torch.utils.data.distributed.DistributedSampler(
         valid_dataset,
         num_replicas=world_size,
+        shuffle=False,
         rank=rank,
     )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
-        shuffle=True,
         num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
@@ -299,7 +301,6 @@ def train_classifier(
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=config.TEST.BATCH_SIZE_PER_GPU,
-        shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
@@ -324,6 +325,8 @@ def train_classifier(
     model.module.deq.ddp = model
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
         topk = (1,5) if dataset_name == 'imagenet' else (1,)
+        train_sampler.set_epoch(epoch)
+        valid_sampler.set_epoch(epoch)
         if config.TRAIN.LR_SCHEDULER == 'step':
             lr_scheduler.step()
 
