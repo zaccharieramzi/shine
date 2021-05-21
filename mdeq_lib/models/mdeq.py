@@ -77,9 +77,9 @@ class Bottleneck(nn.Module):
         self.conv2.weight.data = other.conv2.weight.data.clone()
         self.conv3.weight.data = other.conv3.weight.data.clone()
         if self.downsample:
-            self.downsample.conv.weight.data = other.downsample.conv.weight.data
-            self.downsample.norm.weight.data = other.downsample.norm.weight.data
-            self.downsample.norm.bias.data = other.downsample.norm.bias.data
+            self.downsample[0].weight.data = other.downsample[0].weight.data
+            self.downsample[1].weight.data = other.downsample[1].weight.data
+            self.downsample[1].bias.data = other.downsample[1].bias.data
 
 class BottleneckGroup(nn.Module):
     expansion = 4
@@ -174,37 +174,37 @@ class MDEQClsNet(MDEQNet):
             in_channels = head_channels[i] * Bottleneck.expansion
             out_channels = head_channels[i+1] * Bottleneck.expansion
 
-            downsamp_module = nn.Sequential(OrderedDict([
-                ('conv', conv3x3(in_channels, out_channels, stride=2, bias=True)),
-                ('norm', norm(out_channels)),
-                ('relu', nn.ReLU(inplace=True)),
-            ]))
+            downsamp_module = nn.Sequential(
+                conv3x3(in_channels, out_channels, stride=2, bias=True),
+                norm(out_channels),
+                nn.ReLU(inplace=True),
+            )
             downsamp_modules.append(downsamp_module)
         downsamp_modules = nn.ModuleList(downsamp_modules)
 
         # Final FC layers
-        final_layer = nn.Sequential(OrderedDict([
-            ('conv', nn.Conv2d(
+        final_layer = nn.Sequential(
+            nn.Conv2d(
                 head_channels[len(pre_stage_channels)-1] * Bottleneck.expansion,
                 self.final_chansize,
                 kernel_size=1,
                 stride=1,
                 padding=0,
-            )),
+            ),
             # NOTE: on the advice of Shaojie we keep this
             # no matter if we use group norm
-            ('norm', nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM)),
-            ('relu', nn.ReLU(inplace=True)),
-        ]))
+            nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM),
+            nn.ReLU(inplace=True),
+        )
         return incre_modules, downsamp_modules, final_layer
 
     def _make_layer(self, block, inplanes, planes, blocks, stride=1, norm=None):
         downsample = None
         if stride != 1 or inplanes != planes * Bottleneck.expansion:
-            downsample = nn.Sequential(OrderedDict([
-                ('conv', nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False)),
-                ('norm', norm(planes * Bottleneck.expansion)),
-            ]))
+            downsample = nn.Sequential(
+                nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False),
+                norm(planes * Bottleneck.expansion),
+            )
 
         layers = []
         layers.append(block(inplanes, planes, stride, downsample))
@@ -263,16 +263,16 @@ class MDEQClsNet(MDEQNet):
         for i_downsamp_module in range(len(self.downsamp_modules)):
             downsamp_module = self.downsamp_modules[i_downsamp_module]
             downsamp_module_copy = self.downsamp_modules_copy[i_downsamp_module]
-            downsamp_module_copy.conv.weight.data = downsamp_module.conv.weight.data.clone()
-            downsamp_module_copy.conv.bias.data = downsamp_module.conv.bias.data.clone()
-            downsamp_module_copy.norm.weight.data = downsamp_module.norm.weight.data.clone()
-            downsamp_module_copy.norm.bias.data = downsamp_module.norm.bias.data.clone()
+            downsamp_module_copy[0].weight.data = downsamp_module[0].weight.data.clone()
+            downsamp_module_copy[0].bias.data = downsamp_module[0].bias.data.clone()
+            downsamp_module_copy[1].weight.data = downsamp_module[1].weight.data.clone()
+            downsamp_module_copy[1].bias.data = downsamp_module[1].bias.data.clone()
 
         # final layer
-        self.final_layer_copy.conv.weight.data = self.final_layer.conv.weight.data.clone()
-        self.final_layer_copy.conv.bias.data = self.final_layer.conv.bias.data.clone()
-        self.final_layer_copy.norm.weight.data = self.final_layer.norm.weight.data.clone()
-        self.final_layer_copy.norm.bias.data = self.final_layer.norm.bias.data.clone()
+        self.final_layer_copy[0].weight.data = self.final_layer[0].weight.data.clone()
+        self.final_layer_copy[0].bias.data = self.final_layer[0].bias.data.clone()
+        self.final_layer_copy[1].weight.data = self.final_layer[1].weight.data.clone()
+        self.final_layer_copy[1].bias.data = self.final_layer[1].bias.data.clone()
 
         # classifier
         self.classifier_copy.weight.data = self.classifier.weight.data.clone()
