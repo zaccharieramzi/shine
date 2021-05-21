@@ -38,7 +38,8 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
         # measure data loading time
         data_time.update(time.time() - end)
         #target = target - 1 # Specific for imagenet
-
+        target = target.cuda(non_blocking=True)
+        input = input.cuda(non_blocking=True)
         # compute output
         if opa:
             add_kwargs = {'y': target}
@@ -50,7 +51,6 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
             writer=writer_dict['writer'],
             **add_kwargs,
         )
-        target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
 
@@ -110,7 +110,7 @@ def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_d
         end = time.time()
         for i, (input, target) in enumerate(val_loader):
             # compute output
-            output = model(input,
+            output = model(input.cuda(non_blocking=True),
                            train_step=-1)
             target = target.cuda(non_blocking=True)
 
