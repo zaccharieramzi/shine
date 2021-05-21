@@ -119,7 +119,7 @@ def adj_broyden(
         if adj_type != 'C':
             raise NotImplementedError('Use adj_type C for now')
         else:
-            sigma = gx
+            sigma = gx.clone().detach()
         n_updates += 1
         part_Us, part_VTs = Us[..., :n_updates - 1], VTs[:, :n_updates - 1]
         # a = An^{-1} sigma
