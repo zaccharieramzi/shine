@@ -77,7 +77,9 @@ class Bottleneck(nn.Module):
         self.conv2.weight.data = other.conv2.weight.data.clone()
         self.conv3.weight.data = other.conv3.weight.data.clone()
         if self.downsample:
-            self.downsample.weight.data = other.downsample.weight.data
+            self.downsample.conv.weight.data = other.downsample.conv.weight.data
+            self.downsample.norm.weight.data = other.downsample.norm.weight.data
+            self.downsample.norm.bias.data = other.downsample.norm.bias.data
         for i in range(1,4):
             eval(f'self.bn{i}').weight.data = eval(f'other.bn{i}').weight.data.clone()
 
@@ -201,8 +203,10 @@ class MDEQClsNet(MDEQNet):
     def _make_layer(self, block, inplanes, planes, blocks, stride=1, norm=None):
         downsample = None
         if stride != 1 or inplanes != planes * Bottleneck.expansion:
-            downsample = nn.Sequential(nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False),
-                norm(planes * Bottleneck.expansion))
+            downsample = nn.Sequential(OrderedDict([
+                ('conv', nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False)),
+                ('norm', norm(planes * Bottleneck.expansion)),
+            ]))
 
         layers = []
         layers.append(block(inplanes, planes, stride, downsample))
