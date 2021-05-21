@@ -250,12 +250,12 @@ class MDEQClsNet(MDEQNet):
         self.classifier_copy = copy.deepcopy(self.classifier)
 
         # incre modules
-        for incre_module, incre_module_copy in zip(self.incre_modules, self.incre_modules_copy):
+        for incre_module, incre_module_copy in zip(self.incre_modules.modules(), self.incre_modules_copy.modules()):
             for layer, layer_copy in zip(incre_module.modules, incre_module_copy.modules):
                 layer_copy._copy(layer)
 
         # downsample modules
-        for downsamp_module, downsamp_module_copy in zip(self.downsamp_modules, self.downsamp_modules_copy):
+        for downsamp_module, downsamp_module_copy in zip(self.downsamp_modules.modules(), self.downsamp_modules_copy.modules()):
             downsamp_module_copy.conv.weight.data = downsamp_module.conv.weight.data.clone()
             downsamp_module_copy.conv.bias.data = downsamp_module.conv.bias.data.clone()
             downsamp_module_copy.norm.weight.data = downsamp_module.norm.weight.data.clone()
