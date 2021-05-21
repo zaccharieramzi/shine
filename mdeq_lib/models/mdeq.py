@@ -275,10 +275,8 @@ class MDEQClsNet(MDEQNet):
         self.final_layer_copy.norm.bias.data = self.final_layer.norm.bias.data.clone()
 
         # classifier
-        self.classifier_copy.conv.weight.data = self.classifier.conv.weight.data.clone()
-        self.classifier_copy.conv.bias.data = self.classifier.conv.bias.data.clone()
-        self.classifier_copy.norm.weight.data = self.classifier.norm.weight.data.clone()
-        self.classifier_copy.norm.bias.data = self.classifier.norm.bias.data.clone()
+        self.classifier_copy.weight.data = self.classifier.weight.data.clone()
+        self.classifier_copy.bias.data = self.classifier.bias.data.clone()
 
         copy_modules = [
             self.incre_modules_copy,
