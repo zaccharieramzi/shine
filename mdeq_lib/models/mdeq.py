@@ -77,7 +77,6 @@ class Bottleneck(nn.Module):
         self.conv2.weight.data = other.conv2.weight.data.clone()
         self.conv3.weight.data = other.conv3.weight.data.clone()
         if self.downsample:
-            assert False, "Shouldn't be here. Check again"
             self.downsample.weight.data = other.downsample.weight.data
         for i in range(1,4):
             eval(f'self.bn{i}').weight.data = eval(f'other.bn{i}').weight.data.clone()
