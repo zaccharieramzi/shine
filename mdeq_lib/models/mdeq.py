@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import os
 import sys
 import logging
@@ -70,6 +71,16 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         return out
+
+    def _copy(self, other):
+        self.conv1.weight.data = other.conv1.weight.data.clone()
+        self.conv2.weight.data = other.conv2.weight.data.clone()
+        self.conv3.weight.data = other.conv3.weight.data.clone()
+        if self.downsample:
+            assert False, "Shouldn't be here. Check again"
+            self.downsample.weight.data = other.downsample.weight.data
+        for i in range(1,4):
+            eval(f'self.bn{i}').weight.data = eval(f'other.bn{i}').weight.data.clone()
 
 class BottleneckGroup(nn.Module):
     expansion = 4
@@ -164,22 +175,28 @@ class MDEQClsNet(MDEQNet):
             in_channels = head_channels[i] * Bottleneck.expansion
             out_channels = head_channels[i+1] * Bottleneck.expansion
 
-            downsamp_module = nn.Sequential(conv3x3(in_channels, out_channels, stride=2, bias=True),
-                                            norm(out_channels),
-                                            nn.ReLU(inplace=True))
+            downsamp_module = nn.Sequential(OrderedDict([
+                ('conv', conv3x3(in_channels, out_channels, stride=2, bias=True)),
+                ('norm', norm(out_channels)),
+                ('relu', nn.ReLU(inplace=True)),
+            ]))
             downsamp_modules.append(downsamp_module)
         downsamp_modules = nn.ModuleList(downsamp_modules)
 
         # Final FC layers
-        final_layer = nn.Sequential(nn.Conv2d(head_channels[len(pre_stage_channels)-1] * Bottleneck.expansion,
-                                              self.final_chansize,
-                                              kernel_size=1,
-                                              stride=1,
-                                              padding=0),
-                                    # NOTE: on the advice of Shaojie we keep this
-                                    # no matter if we use group norm
-                                    nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM),
-                                    nn.ReLU(inplace=True))
+        final_layer = nn.Sequential(OrderedDict([
+            ('conv', nn.Conv2d(
+                head_channels[len(pre_stage_channels)-1] * Bottleneck.expansion,
+                self.final_chansize,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            )),
+            # NOTE: on the advice of Shaojie we keep this
+            # no matter if we use group norm
+            ('norm', nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM)),
+            ('relu', nn.ReLU(inplace=True)),
+        ]))
         return incre_modules, downsamp_modules, final_layer
 
     def _make_layer(self, block, inplanes, planes, blocks, stride=1, norm=None):
@@ -211,13 +228,70 @@ class MDEQClsNet(MDEQNet):
         y = self.classifier(y)
         return y
 
+    def apply_classification_head_copy(self, y_list):
+        # Classification Head
+        y = self.incre_modules_copy[0](y_list[0])
+        for i in range(len(self.downsamp_modules_copy)):
+            y = self.incre_modules_copy[i+1](y_list[i+1]) + self.downsamp_modules_copy[i](y)
+        y = self.final_layer_copy(y)
+
+        # Pool to a 1x1 vector (if needed)
+        if torch._C._get_tracing_state():
+            y = y.flatten(start_dim=2).mean(dim=2)
+        else:
+            y = F.avg_pool2d(y, kernel_size=y.size()[2:]).view(y.size(0), -1)
+        y = self.classifier_copy(y)
+        return y
+
+    def copy_modules(self):
+        self.incre_modules_copy = copy.deepcopy(self.incre_modules)
+        self.downsamp_modules_copy = copy.deepcopy(self.downsamp_modules)
+        self.final_layer_copy = copy.deepcopy(self.final_layer)
+        self.classifier_copy = copy.deepcopy(self.classifier)
+
+        # incre modules
+        for incre_module, incre_module_copy in zip(self.incre_modules, self.incre_module_copy):
+            for layer, layer_copy in zip(incre_module.modules, incre_module_copy.modules):
+                layer_copy._copy(layer)
+
+        # downsample modules
+        for downsamp_module, downsamp_module_copy in zip(self.downsamp_modules, self.downsamp_modules_copy):
+            downsamp_module_copy.conv.weight.data = downsamp_module.conv.weight.data.clone()
+            downsamp_module_copy.conv.bias.data = downsamp_module.conv.bias.data.clone()
+            downsamp_module_copy.norm.weight.data = downsamp_module.norm.weight.data.clone()
+            downsamp_module_copy.norm.bias.data = downsamp_module.norm.bias.data.clone()
+
+        # final layer
+        self.final_layer_copy.conv.weight.data = self.final_layer.conv.weight.data.clone()
+        self.final_layer_copy.conv.bias.data = self.final_layer.conv.bias.data.clone()
+        self.final_layer_copy.norm.weight.data = self.final_layer.norm.weight.data.clone()
+        self.final_layer_copy.norm.bias.data = self.final_layer.norm.bias.data.clone()
+
+        # classifier
+        self.classifier_copy.conv.weight.data = self.classifier.conv.weight.data.clone()
+        self.classifier_copy.conv.bias.data = self.classifier.conv.bias.data.clone()
+        self.classifier_copy.norm.weight.data = self.classifier.norm.weight.data.clone()
+        self.classifier_copy.norm.bias.data = self.classifier.norm.bias.data.clone()
+
+        copy_modules = [
+            self.incre_modules_copy,
+            self.downsamp_modules_copy,
+            self.final_layer_copy,
+            self.classifier_copy,
+        ]
+        for module in copy_modules:
+            for param in module.parameters():
+                param.requires_grad_(False)
+
+
     def get_fixed_point_loss(self, y_est, true_y):
-        loss = self.criterion(self.apply_classification_head(y_est), true_y)
+        loss = self.criterion(self.apply_classification_head_copy(y_est), true_y)
         return loss
 
     def forward(self, x, train_step=0, **kwargs):
         if self.opa:
             true_y = kwargs.get('y', None)
+            self.copy_modules()
             loss_function = lambda y_est: self.get_fixed_point_loss(y_est, true_y)
             kwargs['loss_function'] = loss_function
         y_list = self._forward(x, train_step, **kwargs)
