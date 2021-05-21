@@ -252,7 +252,8 @@ class MDEQClsNet(MDEQNet):
         # incre modules
         for incre_module, incre_module_copy in zip(self.incre_modules.modules(), self.incre_modules_copy.modules()):
             for layer, layer_copy in zip(incre_module.modules(), incre_module_copy.modules()):
-                layer_copy._copy(layer)
+                for block, block_copy in zip(layer.modules(), layer_copy.modules()):
+                    block_copy._copy(block)
 
         # downsample modules
         for downsamp_module, downsamp_module_copy in zip(self.downsamp_modules.modules(), self.downsamp_modules_copy.modules()):
