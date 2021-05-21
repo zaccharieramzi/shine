@@ -80,8 +80,6 @@ class Bottleneck(nn.Module):
             self.downsample.conv.weight.data = other.downsample.conv.weight.data
             self.downsample.norm.weight.data = other.downsample.norm.weight.data
             self.downsample.norm.bias.data = other.downsample.norm.bias.data
-        for i in range(1,4):
-            eval(f'self.bn{i}').weight.data = eval(f'other.bn{i}').weight.data.clone()
 
 class BottleneckGroup(nn.Module):
     expansion = 4
