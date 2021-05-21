@@ -250,7 +250,7 @@ class MDEQClsNet(MDEQNet):
         self.classifier_copy = copy.deepcopy(self.classifier)
 
         # incre modules
-        for incre_module, incre_module_copy in zip(self.incre_modules, self.incre_module_copy):
+        for incre_module, incre_module_copy in zip(self.incre_modules, self.incre_modules_copy):
             for layer, layer_copy in zip(incre_module.modules, incre_module_copy.modules):
                 layer_copy._copy(layer)
 
