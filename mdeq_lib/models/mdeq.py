@@ -76,6 +76,12 @@ class Bottleneck(nn.Module):
         self.conv1.weight.data = other.conv1.weight.data.clone()
         self.conv2.weight.data = other.conv2.weight.data.clone()
         self.conv3.weight.data = other.conv3.weight.data.clone()
+        self.bn1.running_mean.data = other.bn1.running_mean.data.clone()
+        self.bn1.running_var.data = other.bn1.running_var.data.clone()
+        self.bn2.running_mean.data = other.bn2.running_mean.data.clone()
+        self.bn2.running_var.data = other.bn2.running_var.data.clone()
+        self.bn3.running_var.data = other.bn3.running_var.data.clone()
+        self.bn3.running_mean.data = other.bn3.running_mean.data.clone()
         if self.downsample:
             self.downsample[0].weight.data = other.downsample[0].weight.data
             self.downsample[1].weight.data = other.downsample[1].weight.data
@@ -245,11 +251,8 @@ class MDEQClsNet(MDEQNet):
         return y
 
     def copy_modules(self):
-        self.incre_modules_copy = copy.deepcopy(self.incre_modules)
-        self.downsamp_modules_copy = copy.deepcopy(self.downsamp_modules)
-        self.final_layer_copy = copy.deepcopy(self.final_layer)
-        self.classifier_copy = copy.deepcopy(self.classifier)
-
+        self.classifier_copy =  nn.Linear(self.final_chansize, self.num_classes)
+        self.incre_modules_copy, self.downsamp_modules_copy, self.final_layer_copy = self._make_head(self.num_channels)
         # incre modules
         for i_incr_module in range(len(self.incre_modules)):
             incre_module = self.incre_modules[i_incr_module]
@@ -267,12 +270,16 @@ class MDEQClsNet(MDEQNet):
             downsamp_module_copy[0].bias.data = downsamp_module[0].bias.data.clone()
             downsamp_module_copy[1].weight.data = downsamp_module[1].weight.data.clone()
             downsamp_module_copy[1].bias.data = downsamp_module[1].bias.data.clone()
+            downsamp_module_copy[1].running_mean.data = downsamp_module[1].running_mean.data.clone()
+            downsamp_module_copy[1].running_var.data = downsamp_module[1].running_var.data.clone()
 
         # final layer
         self.final_layer_copy[0].weight.data = self.final_layer[0].weight.data.clone()
         self.final_layer_copy[0].bias.data = self.final_layer[0].bias.data.clone()
         self.final_layer_copy[1].weight.data = self.final_layer[1].weight.data.clone()
         self.final_layer_copy[1].bias.data = self.final_layer[1].bias.data.clone()
+        self.final_layer_copy[1].running_mean.data = self.final_layer[1].running_mean.data.clone()
+        self.final_layer_copy[1].running_var.data = self.final_layer[1].running_var.data.clone()
 
         # classifier
         self.classifier_copy.weight.data = self.classifier.weight.data.clone()
