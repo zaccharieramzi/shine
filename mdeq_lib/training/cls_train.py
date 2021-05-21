@@ -14,6 +14,7 @@ import shutil
 import sys
 
 import numpy as np
+import horovod.torch as hvd
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -110,6 +111,9 @@ def train_classifier(
     use_group_norm=False,
     seed=0,
 ):
+    hvd.init()
+    torch.cuda.set_device(hvd.local_rank())
+
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -178,8 +182,7 @@ def train_classifier(
         'valid_global_steps': 0,
     }
 
-    gpus = list(config.GPUS)
-    model = nn.DataParallel(model, device_ids=gpus).cuda()
+    model = model.cuda()
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
@@ -252,21 +255,35 @@ def train_classifier(
         train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
         valid_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=False, download=True, transform=transform_valid)
 
+    train_sampler = torch.utils.data.distributed.DistributedSampler(
+        train_dataset,
+        num_replicas=hvd.size(),
+        rank=hvd.rank(),
+        shuffle=True,
+        seed=seed,
+    )
+    valid_sampler = torch.utils.data.distributed.DistributedSampler(
+        valid_dataset,
+        num_replicas=hvd.size(),
+        rank=hvd.rank(),
+    )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
-        shuffle=True,
-        num_workers=config.WORKERS,
-        pin_memory=True,
-        worker_init_fn=partial(worker_init_fn, seed=seed),
-    )
-    valid_loader = torch.utils.data.DataLoader(
-        valid_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus),
+        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
         shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
+        sampler=train_sampler,
+    )
+    valid_loader = torch.utils.data.DataLoader(
+        valid_dataset,
+        batch_size=config.TEST.BATCH_SIZE_PER_GPU,
+        shuffle=False,
+        num_workers=config.WORKERS,
+        pin_memory=True,
+        worker_init_fn=partial(worker_init_fn, seed=seed),
+        sampler=valid_sampler,
     )
 
     # Learning rate scheduler
@@ -283,6 +300,8 @@ def train_classifier(
                 optimizer, config.TRAIN.LR_STEP, config.TRAIN.LR_FACTOR,
                 last_epoch-1)
 
+    optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=model.named_parameters())
+    hvd.broadcast_parameters(model.state_dict(), root_rank=0)
     # Training code
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
         topk = (1,5) if dataset_name == 'imagenet' else (1,)
