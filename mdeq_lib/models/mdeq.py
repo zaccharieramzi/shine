@@ -250,13 +250,18 @@ class MDEQClsNet(MDEQNet):
         self.classifier_copy = copy.deepcopy(self.classifier)
 
         # incre modules
-        for incre_module, incre_module_copy in zip(self.incre_modules.modules(), self.incre_modules_copy.modules()):
-            for layer, layer_copy in zip(incre_module.modules(), incre_module_copy.modules()):
-                for block, block_copy in zip(layer.modules(), layer_copy.modules()):
-                    block_copy._copy(block)
+        for i_incr_module in range(len(self.incre_modules)):
+            incre_module = self.incre_modules[i_incr_module]
+            incre_module_copy = self.incre_modules_copy[i_incr_module]
+            for i_layer in range(len(incre_module)):
+                layer = incre_module[i_layer]
+                layer_copy = incre_module_copy[i_layer]
+                layer_copy._copy(layer)
 
         # downsample modules
-        for downsamp_module, downsamp_module_copy in zip(self.downsamp_modules.modules(), self.downsamp_modules_copy.modules()):
+        for i_downsamp_module in range(len(self.downsamp_modules)):
+            downsamp_module = self.downsamp_modules[i_downsamp_module]
+            downsamp_module_copy = self.downsamp_modules_copy[i_downsamp_module]
             downsamp_module_copy.conv.weight.data = downsamp_module.conv.weight.data.clone()
             downsamp_module_copy.conv.bias.data = downsamp_module.conv.bias.data.clone()
             downsamp_module_copy.norm.weight.data = downsamp_module.norm.weight.data.clone()
