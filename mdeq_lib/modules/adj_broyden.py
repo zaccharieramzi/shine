@@ -70,7 +70,7 @@ def adj_broyden(
     opa = inverse_direction_fun is not None and inverse_direction_freq is not None
     while new_objective >= eps and nstep < threshold:
         if opa and nstep > 1 and nstep % inverse_direction_freq == 0:
-            inverse_direction = inverse_direction_fun(x_est)
+            inverse_direction = inverse_direction_fun(x_est).clone().detach()
             e = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], inverse_direction)
             e = e / torch.norm(e) * torch.norm(update)
             gx.backward(e, retain_graph=False)
