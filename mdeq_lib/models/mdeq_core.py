@@ -15,9 +15,8 @@ import torch
 import torch.nn as nn
 import torch._utils
 import torch.nn.functional as F
-from torch.nn.utils.weight_norm import WeightNorm
 
-from mdeq_lib.modules.optimizations import VariationalHidDropout2d, reset_wn
+from mdeq_lib.modules.optimizations import *
 from mdeq_lib.modules.deq2d import *
 from mdeq_lib.models.mdeq_forward_backward import MDEQWrapper
 
@@ -63,14 +62,14 @@ class BasicBlock(nn.Module):
         if wnorm: self._wnorm()
 
     def _wnorm(self):
-        self.conv1_fn = WeightNorm.apply(self.conv1, name='weight', dim=0)
-        self.conv2_fn = WeightNorm.apply(self.conv2, name='weight', dim=0)
+        self.conv1, self.conv1_fn = weight_norm(self.conv1, names=['weight'], dim=0)
+        self.conv2, self.conv2_fn = weight_norm(self.conv2, names=['weight'], dim=0)
 
     def _reset(self, x):
         if 'conv1_fn' in self.__dict__:
-            reset_wn(self.conv1_fn, self.conv1)
+            self.conv1_fn.reset(self.conv1)
         if 'conv2_fn' in self.__dict__:
-            reset_wn(self.conv2_fn, self.conv2)
+            self.conv2_fn.reset(self.conv2)
         self.drop.reset_mask(x)
 
     def _copy(self, other):
@@ -241,8 +240,9 @@ class MDEQModule(nn.Module):
         for i, branch in enumerate(self.branches):
             for block in branch.blocks:
                 block._wnorm()
-            fn = WeightNorm.apply(self.post_fuse_layers[i].conv, name='weight', dim=0)
+            conv, fn = weight_norm(self.post_fuse_layers[i].conv, names=['weight'], dim=0)
             self.post_fuse_fns.append(fn)
+            self.post_fuse_layers[i].conv = conv
 
         # Throw away garbage
         torch.cuda.empty_cache()
@@ -277,7 +277,7 @@ class MDEQModule(nn.Module):
             for block in branch.blocks:
                 block._reset(xs[i])
             if 'post_fuse_fns' in self.__dict__:
-                reset_wn(self.post_fuse_fns[i], self.post_fuse_layers[i].conv)    # Re-compute (...).conv.weight using _g and _v
+                self.post_fuse_fns[i].reset(self.post_fuse_layers[i].conv)    # Re-compute (...).conv.weight using _g and _v
 
     def _make_one_branch(self, branch_index, block, num_blocks, num_channels, stride=1, dropout=0.0):
         layers = nn.ModuleList()
