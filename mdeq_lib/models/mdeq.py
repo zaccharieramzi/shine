@@ -86,6 +86,8 @@ class Bottleneck(nn.Module):
             self.downsample[0].weight.data = other.downsample[0].weight.data
             self.downsample[1].weight.data = other.downsample[1].weight.data
             self.downsample[1].bias.data = other.downsample[1].bias.data
+            self.downsample[1].running_mean.data = other.downsample[1].running_mean.data
+            self.downsample[1].running_var.data = other.downsample[1].running_var.data
 
 class BottleneckGroup(nn.Module):
     expansion = 4
