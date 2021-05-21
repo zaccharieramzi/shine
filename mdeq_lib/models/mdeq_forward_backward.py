@@ -51,7 +51,7 @@ class MDEQWrapper(DEQModule2d):
             raise ValueError("Input injection is required.")
 
         forward_out = DEQFunc2d.apply(
-            self.func,
+            self.func_copy,
             z1,
             u,
             self.adjoint_broyden if train_step > -1 else False,
