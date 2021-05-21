@@ -159,8 +159,8 @@ def train_classifier(
         opa=opa,
     ).cuda()
 
-    dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
-    logger.info(get_model_summary(model, dump_input))
+    # dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
+    # logger.info(get_model_summary(model, dump_input))
 
     if config.TRAIN.MODEL_FILE:
         model.load_state_dict(torch.load(config.TRAIN.MODEL_FILE))
