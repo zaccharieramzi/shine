@@ -264,4 +264,5 @@ def eval_ratio_fb_classifier(
             time_backward = end_backward - start_backward
             ratios.append(time_backward / time_forward)
     print(prof.key_averages().table(sort_by="cuda_time_total"))
+    prof.export_chrome_trace("trace.json")
     return ratios
