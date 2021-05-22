@@ -196,7 +196,7 @@ def eval_ratio_fb_classifier(
             checkpoint = torch.load(model_state_file)
             last_epoch = checkpoint['epoch']
             best_perf = checkpoint['perf']
-            model.module.load_state_dict(checkpoint['state_dict'])
+            model.load_state_dict(checkpoint['state_dict'])
 
             # Update weight decay if needed
             checkpoint['optimizer']['param_groups'][0]['weight_decay'] = config.TRAIN.WD
