@@ -235,7 +235,7 @@ def eval_ratio_fb_classifier(
 
     iter_loader = iter(train_loader)
     ratios = []
-    with torch.autograd.profiler.profile(use_cuda=True, with_stack=True) as prof:
+    with torch.autograd.profiler.profile(use_cuda=True) as prof:
         for i_sample in range(n_samples):
             input, target = next(iter_loader)
             input = input.cuda(non_blocking=False)
