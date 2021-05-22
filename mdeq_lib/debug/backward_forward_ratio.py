@@ -251,7 +251,7 @@ def eval_ratio_fb_classifier(
             with profiler.record_function("Forward PASS"):
                 start_forward = time.time()
                 with torch.no_grad():
-                    z_list = model.fullstage_copy(z_list, x_list)
+                    model.fullstage_copy(z_list, x_list)
                     torch.cuda.synchronize()
                 end_forward = time.time()
                 time_forward = end_forward - start_forward
