@@ -180,11 +180,7 @@ def eval_ratio_fb_classifier(
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
 
-    optimizer = get_optimizer(config, model)
-    lr_scheduler = None
 
-    best_perf = 0.0
-    best_model = False
     last_epoch = config.TRAIN.BEGIN_EPOCH
     if config.TRAIN.RESUME:
         if restart_from is None:
@@ -197,17 +193,6 @@ def eval_ratio_fb_classifier(
             last_epoch = checkpoint['epoch']
             best_perf = checkpoint['perf']
             model.load_state_dict(checkpoint['state_dict'])
-
-            # Update weight decay if needed
-            checkpoint['optimizer']['param_groups'][0]['weight_decay'] = config.TRAIN.WD
-            optimizer.load_state_dict(checkpoint['optimizer'])
-
-            if 'lr_scheduler' in checkpoint:
-                lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 1e5,
-                                  last_epoch=checkpoint['lr_scheduler']['last_epoch'])
-                lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-            logger.info("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
-            best_model = True
 
     # Data loading code
     dataset_name = config.DATASET.DATASET
@@ -243,20 +228,6 @@ def eval_ratio_fb_classifier(
         worker_init_fn=partial(worker_init_fn, seed=seed),
     )
 
-
-    # Learning rate scheduler
-    if lr_scheduler is None:
-        if config.TRAIN.LR_SCHEDULER != 'step':
-            lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, len(train_loader)*config.TRAIN.END_EPOCH, eta_min=1e-6)
-        elif isinstance(config.TRAIN.LR_STEP, list):
-            lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer, config.TRAIN.LR_STEP, config.TRAIN.LR_FACTOR,
-                last_epoch-1)
-        else:
-            lr_scheduler = torch.optim.lr_scheduler.StepLR(
-                optimizer, config.TRAIN.LR_STEP, config.TRAIN.LR_FACTOR,
-                last_epoch-1)
 
     iter_loader = iter(train_loader)
     ratios = []
