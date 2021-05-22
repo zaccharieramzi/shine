@@ -238,7 +238,7 @@ def eval_ratio_fb_classifier(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
         shuffle=True,
-        num_workers=config.WORKERS,
+        num_workers=10,
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=seed),
     )
