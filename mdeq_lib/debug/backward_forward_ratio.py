@@ -253,3 +253,16 @@ def eval_ratio_fb_classifier(
         time_backward = end_backward - start_backward
         ratios.append(time_backward / time_forward)
     return ratios
+
+
+if __name__ == '__main__':
+    base_params = dict(
+        n_gpus=n_gpus,
+        n_epochs=100,
+        seed=42,
+        restart_from=50,
+        n_samples=200,
+    )
+    eval_ratio_fb_classifier(
+        dataset='cifar', model_size='LARGE', **base_params
+    )
