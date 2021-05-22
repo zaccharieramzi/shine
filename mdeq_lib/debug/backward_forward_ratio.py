@@ -238,6 +238,8 @@ def eval_ratio_fb_classifier(
         # For variational dropout mask resetting and weight normalization re-computations
         model.fullstage._reset(z_list)
         model.fullstage_copy._copy(model.fullstage)
+        x_list = [x.clone().detach().requires_grad_() for x in x_list]
+        z_list = [z.clone().detach().requires_grad_() for z in z_list]
         start_forward = time.time()
         z_list = model.fullstage_copy(z_list, x_list)
         end_forward = time.time()
