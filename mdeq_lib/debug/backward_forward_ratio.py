@@ -256,8 +256,8 @@ def eval_ratio_fb_classifier(
                 end_forward = time.time()
                 time_forward = end_forward - start_forward
             with profiler.record_function("Forward PASS enable grad"):
-                z_list = model.fullstage_copy(z_list, x_list)
-            z = DEQFunc2d.list2vec(z_list)
+                z_list_new = model.fullstage_copy(z_list, x_list)
+            z = DEQFunc2d.list2vec(z_list_new)
             with profiler.record_function("Backward PASS"):
                 start_backward = time.time()
                 z.backward(z)
