@@ -16,6 +16,7 @@ import time
 
 import numpy as np
 import torch
+import torch.autograd.profiler as profiler
 import torch.nn as nn
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
@@ -245,19 +246,22 @@ def eval_ratio_fb_classifier(
             model.fullstage_copy._copy(model.fullstage)
             x_list = [x.clone().detach().requires_grad_() for x in x_list]
             z_list = [z.clone().detach().requires_grad_() for z in z_list]
-            start_forward = time.time()
-            with torch.no_grad():
+            with profiler.record_function("Forward PASS"):
+                start_forward = time.time()
+                with torch.no_grad():
+                    z_list = model.fullstage_copy(z_list, x_list)
+                    torch.cuda.synchronize()
+                end_forward = time.time()
+                time_forward = end_forward - start_forward
+            with profiler.record_function("Forward PASS enable grad"):
                 z_list = model.fullstage_copy(z_list, x_list)
-                torch.cuda.synchronize()
-            end_forward = time.time()
-            time_forward = end_forward - start_forward
-            z_list = model.fullstage_copy(z_list, x_list)
             z = DEQFunc2d.list2vec(z_list)
-            start_backward = time.time()
-            z.backward(z)
-            torch.cuda.synchronize()
-            end_backward = time.time()
+            with profiler.record_function("Backward PASS"):
+                start_backward = time.time()
+                z.backward(z)
+                torch.cuda.synchronize()
+                end_backward = time.time()
             time_backward = end_backward - start_backward
             ratios.append(time_backward / time_forward)
-    print(prof.key_averages().table(sort_by="self_cuda_time_total"))
+    print(prof.key_averages().table(sort_by="cuda_time_total"))
     return ratios
