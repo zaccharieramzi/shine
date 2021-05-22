@@ -241,9 +241,11 @@ def eval_ratio_fb_classifier(
         x_list = [x.clone().detach().requires_grad_() for x in x_list]
         z_list = [z.clone().detach().requires_grad_() for z in z_list]
         start_forward = time.time()
-        z_list = model.fullstage_copy(z_list, x_list)
+        with torch.no_grad():
+            z_list = model.fullstage_copy(z_list, x_list)
         end_forward = time.time()
         time_forward = end_forward - start_forward
+        z_list = model.fullstage_copy(z_list, x_list)
         z = DEQFunc2d.list2vec(z_list)
         start_backward = time.time()
         z.backward(z)
