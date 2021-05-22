@@ -238,9 +238,11 @@ def eval_ratio_fb_classifier(
     ratios = []
     with torch.autograd.profiler.profile(use_cuda=True) as prof:
         for i_sample in range(n_samples):
-            input, target = next(iter_loader)
-            input = input.cuda(non_blocking=False)
-            x_list, z_list = model.feature_extraction(input)
+            with profiler.record_function("Data loading"):
+                input, target = next(iter_loader)
+                input = input.cuda(non_blocking=False)
+            with profiler.record_function("Feature extraction PASS"):
+                x_list, z_list = model.feature_extraction(input)
             # For variational dropout mask resetting and weight normalization re-computations
             model.fullstage._reset(z_list)
             model.fullstage_copy._copy(model.fullstage)
