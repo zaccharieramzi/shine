@@ -135,7 +135,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True):
         result_info = adj_broyden(
             g,
             z1_est,
-            threshold=18,
+            threshold=27,
             eps=eps,
             name="forward",
             inverse_direction_freq=1 if opa else None,
