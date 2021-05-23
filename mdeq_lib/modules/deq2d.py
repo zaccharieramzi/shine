@@ -200,7 +200,7 @@ class DEQModule2d(nn.Module):
                     # is completely off.
                     # This hardcoded value should be changed at some point to a config
                     # value
-                    fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.3 * grad.view(bsz, -1).norm(dim=1)
+                    fallback_mask = dl_df_est.view(bsz, -1).norm(dim=1) > 1.8 * grad.view(bsz, -1).norm(dim=1)
                     fallback_mask = fallback_mask[:, None, None]
                     dl_df_est = fallback_mask * grad + ~fallback_mask * dl_df_est
                     if dl_df_est.get_device() == 0 and writer is not None:
