@@ -22,14 +22,12 @@ plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
-def setup_model(opa=False):
+def setup_model(opa=False, dataset='imagenet', model_size='SMALL'):
     seed = 42
     restart_from = 50
     n_epochs = 100
     pretrained = False
     n_gpus = 1
-    dataset = 'imagenet'
-    model_size = 'SMALL'
     use_group_norm = False
     shine = False
     fpn = False
@@ -77,18 +75,27 @@ def setup_model(opa=False):
 
     return model
 
-def adj_broyden_correl(opa, n_runs=1, random_prescribed=True):
+def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet', model_size='LARGE'):
     # setup
-    model = setup_model(opa)
-    traindir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TRAIN_SET)
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    transform_train = transforms.Compose([
-        transforms.RandomResizedCrop(config.MODEL.IMAGE_SIZE[0]),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        normalize,
-    ])
-    train_dataset = datasets.ImageFolder(traindir, transform_train)
+    model = setup_model(opa, dataset, model_size)
+    if dataset == 'imagenet':
+        traindir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TRAIN_SET)
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transform_train = transforms.Compose([
+            transforms.RandomResizedCrop(config.MODEL.IMAGE_SIZE[0]),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+        train_dataset = datasets.ImageFolder(traindir, transform_train)
+    else:
+        normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        augment_list = [transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip()] if config.DATASET.AUGMENT else []
+        transform_train = transforms.Compose(augment_list + [
+            transforms.ToTensor(),
+            normalize,
+        ])
+        train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=32,
@@ -188,7 +195,13 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True):
     return inv_quality_results
 
 
-def present_results(inv_quality_results, opa=False, random_prescribed=True):
+def present_results(
+        inv_quality_results,
+        opa=False,
+        random_prescribed=True,
+        dataset='imagenet',
+        model_size='SMALL',
+):
     fig = plt.figure(figsize=(5.5, 2.1))
     g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
     for i in range(3):
@@ -246,7 +259,7 @@ def present_results(inv_quality_results, opa=False, random_prescribed=True):
         fig_name += '_opa'
     if not random_prescribed:
         fig_name += '_true_grad'
-    fig_name += 'scatter.pdf'
+    fig_name += f'scatter_{dataset}_{model_size}.pdf'
     plt.savefig(fig_name, dpi=300)
 
 
@@ -257,38 +270,42 @@ if __name__ == '__main__':
     save_results = False
     reload_results = False
     plot_results = True
+    dataset = 'imagenet'
+    model_size = 'SMALL'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
-    print('='*20)
-    print('Without OPA')
-    if reload_results:
-        inv_quality_results = adj_broyden_correl(False, n_runs)
-    if random_prescribed:
-        res_name = 'adj_broyden_inv_results.pkl'
-    else:
-        res_name = 'adj_broyden_inv_results_true_grad.pkl'
-    if save_results:
-        with open(res_name, 'wb') as f:
-            pickle.dump(inv_quality_results, f)
-    else:
-        with open(res_name, 'rb') as f:
-            inv_quality_results = pickle.load(f)
-    if plot_results:
-        present_results(inv_quality_results, opa=False, random_prescribed=random_prescribed)
-    print('='*20)
-    print('With OPA')
-    if reload_results:
-        inv_quality_results = adj_broyden_correl(True, n_runs)
-    if random_prescribed:
-        res_name = 'adj_broyden_opa_inv_results.pkl'
-    else:
-        res_name = 'adj_broyden_opa_inv_results_true_grad.pkl'
-    if save_results:
-        with open(res_name, 'wb') as f:
-            pickle.dump(inv_quality_results, f)
-    else:
-        with open(res_name, 'rb') as f:
-            inv_quality_results = pickle.load(f)
-    if plot_results:
-        present_results(inv_quality_results, opa=True, random_prescribed=random_prescribed)
-    print('='*20)
+    for opa in [False, True]:
+        print('='*20)
+        if opa:
+            print('With OPA')
+        else:
+            print('Without OPA')
+        if reload_results:
+            inv_quality_results = adj_broyden_correl(
+                opa,
+                n_runs,
+                random_prescribed,
+                dataset,
+                model_size,
+            )
+        res_name = 'adj_broyden_inv_results_{dataset}_{model_size}'
+        if opa:
+            res_name += '_opa'
+        if not random_prescribed:
+            res_name += '_true_grad'
+        res_name += '.pkl'
+        if save_results:
+            with open(res_name, 'wb') as f:
+                pickle.dump(inv_quality_results, f)
+        else:
+            with open(res_name, 'rb') as f:
+                inv_quality_results = pickle.load(f)
+        if plot_results:
+            present_results(
+                inv_quality_results,
+                opa=opa,
+                random_prescribed=random_prescribed,
+                dataset=dataset,
+                model_size=model_size,
+            )
+        print('='*20)
