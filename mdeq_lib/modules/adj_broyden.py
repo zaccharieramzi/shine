@@ -90,7 +90,7 @@ def adj_broyden(
             VTs[:,(n_updates-1) % LBFGS_thres] = vT
             Us[:,:,:,(n_updates-1) % LBFGS_thres] = u
         x_est, delta_x, ite = line_search(update, x_est, gx, g, nstep=nstep, on=ls, compute_g=False)
-        x_temp = x_est.requires_grad_()
+        x_temp = x_est.clone().detach().requires_grad_()
         with torch.enable_grad():
             gx = g(x_temp)
         nstep += 1
