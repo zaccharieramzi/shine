@@ -287,7 +287,7 @@ def save_results(
             dataset,
             model_size,
         )
-        res_name = 'adj_broyden_inv_results_{dataset}_{model_size}'
+        res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
         if opa:
             res_name += '_opa'
         if not random_prescribed:
