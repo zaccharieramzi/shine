@@ -313,7 +313,7 @@ if __name__ == '__main__':
             print('With OPA')
         else:
             print('Without OPA')
-        res_name = 'adj_broyden_inv_results_{dataset}_{model_size}'
+        res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
         if opa:
             res_name += '_opa'
         if not random_prescribed:
