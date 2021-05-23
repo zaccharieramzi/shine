@@ -127,7 +127,6 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
         z1_est = DEQFunc2d.list2vec(z_list)
         g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
         directions_dir = {
-            # XXX: change directions in order to have nor roughly the same as the gradient
             'random': torch.randn(z1_est.shape),
             'prescribed': torch.randn(z1_est.shape),
         }
@@ -183,8 +182,6 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
                 eps=eps,
                 name="backward",
             )
-            # XXX: make sure inversion happens as planned, i.e. that we perform
-            # enough steps etc...
             true_inv = result_info_inversion['result']
             inv_dir = {
                 'fpn': directions_dir[direction],
