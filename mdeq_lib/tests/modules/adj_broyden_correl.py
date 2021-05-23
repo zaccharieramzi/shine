@@ -199,7 +199,6 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
                 inv_quality_results[direction][method]['correl'].append(correl.item())
                 inv_quality_results[direction][method]['ratio'].append(ratio.item())
         y.backward(torch.zeros_like(true_inv), retain_graph=False)
-        # XXX: also get ratio of opa / fpn in order to determine the best threshold for fallback
     return inv_quality_results
 
 
