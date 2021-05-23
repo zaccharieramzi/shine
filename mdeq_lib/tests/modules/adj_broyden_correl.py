@@ -35,6 +35,10 @@ def setup_model(opa=False, dataset='imagenet', model_size='SMALL'):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    try:
+        torch.multiprocessing.set_start_method('spawn')
+    except RuntimeError:
+        pass
     args = update_config_w_args(
         n_epochs=n_epochs,
         pretrained=pretrained,
@@ -267,9 +271,6 @@ def present_results(
 def save_results(
         n_runs=100,
         random_prescribed=False,
-        save_results=False,
-        reload_results=False,
-        plot_results=True,
         dataset='imagenet',
         model_size='SMALL',
 ):
@@ -297,7 +298,6 @@ def save_results(
 
 
 if __name__ == '__main__':
-    torch.multiprocessing.set_start_method('spawn')
     n_runs = 100
     random_prescribed = False
     save_results = False
