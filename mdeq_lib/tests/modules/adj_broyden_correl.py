@@ -77,7 +77,7 @@ def setup_model(opa=False):
 
     return model
 
-def adj_broyden_correl(opa, n_runs=1):
+def adj_broyden_correl(opa, n_runs=1, random_prescribed=True):
     # setup
     model = setup_model(opa)
     traindir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TRAIN_SET)
@@ -102,7 +102,7 @@ def adj_broyden_correl(opa, n_runs=1):
     } for dir in ['prescribed', 'random']}
     iter_loader = iter(train_loader)
     for i_run in range(n_runs):
-        input, _ = next(iter_loader)
+        input, target = next(iter_loader)
         x_list, z_list = model.feature_extraction(input.cuda())
         model.fullstage._reset(z_list)
         model.fullstage_copy._copy(model.fullstage)
@@ -118,6 +118,20 @@ def adj_broyden_correl(opa, n_runs=1):
             'random': torch.randn(z1_est.shape),
             'prescribed': torch.randn(z1_est.shape),
         }
+        if random_prescribed:
+            inverse_direction_fun = lambda x: directions_dir['prescribed']
+        else:
+            model.copy_modules()
+            loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
+            def inverse_direction_fun_vec(x):
+                x_temp = x.clone().detach().requires_grad_()
+                with torch.enable_grad():
+                    x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
+                    loss = loss_function(x_list)
+                loss.backward()
+                dl_dx = x_temp.grad
+                return dl_dx
+            inverse_direction_fun = inverse_direction_fun_vec
         result_info = adj_broyden(
             g,
             z1_est,
@@ -125,12 +139,15 @@ def adj_broyden_correl(opa, n_runs=1):
             eps=eps,
             name="forward",
             inverse_direction_freq=1 if opa else None,
-            inverse_direction_fun=lambda x: directions_dir['prescribed'] if opa else None,
+            inverse_direction_fun=inverse_direction_fun if opa else None,
         )
         z1_est = result_info['result']
         Us = result_info['Us']
         VTs = result_info['VTs']
         nstep = result_info['lowest_step']
+        # compute true incoming gradient if needed
+        if not random_prescribed:
+            directions_dir['prescribed'] = inverse_direction_fun_vec(z1_est)
         # inversion on random gradients
         z1_temp = z1_est.clone().detach().requires_grad_()
         with torch.enable_grad():
