@@ -28,8 +28,8 @@ def setup_model(opa=False):
     n_epochs = 100
     pretrained = False
     n_gpus = 1
-    dataset = 'imagenet'
-    model_size = 'SMALL'
+    dataset = 'cifar'
+    model_size = 'LARGE'
     use_group_norm = False
     shine = False
     fpn = False
@@ -104,8 +104,10 @@ def adj_broyden_correl(opa, n_runs=1):
     for i_run in range(n_runs):
         input, _ = next(iter_loader)
         x_list, z_list = model.feature_extraction(input.cuda())
+        model.fullstage._reset(z_list)
+        model.fullstage_copy._copy(model.fullstage)
         # fixed point solving
-        x_list = [x.clone().detach() for x in x_list]
+        x_list = [x.clone().detach().requires_grad_() for x in x_list]
         cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
         args = (27, int(1e9), None)
         nelem = sum([elem.nelement() for elem in z_list])
@@ -119,7 +121,7 @@ def adj_broyden_correl(opa, n_runs=1):
         result_info = adj_broyden(
             g,
             z1_est,
-            threshold=27,
+            threshold=18,
             eps=eps,
             name="forward",
             inverse_direction_freq=1 if opa else None,
@@ -130,7 +132,6 @@ def adj_broyden_correl(opa, n_runs=1):
         VTs = result_info['VTs']
         nstep = result_info['lowest_step']
         # inversion on random gradients
-
         z1_temp = z1_est.clone().detach().requires_grad_()
         with torch.enable_grad():
             y = DEQFunc2d.g(model.fullstage_copy, z1_temp, x_list, cutoffs, *args)
