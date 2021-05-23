@@ -110,6 +110,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
     iter_loader = iter(train_loader)
     for i_run in range(n_runs):
         input, target = next(iter_loader)
+        target = target.cuda(non_blocking=True)
         x_list, z_list = model.feature_extraction(input.cuda())
         model.fullstage._reset(z_list)
         model.fullstage_copy._copy(model.fullstage)
@@ -263,6 +264,38 @@ def present_results(
     plt.savefig(fig_name, dpi=300)
 
 
+def save_results(
+        n_runs=100,
+        random_prescribed=False,
+        save_results=False,
+        reload_results=False,
+        plot_results=True,
+        dataset='imagenet',
+        model_size='SMALL',
+):
+    for opa in [False, True]:
+        print('='*20)
+        if opa:
+            print('With OPA')
+        else:
+            print('Without OPA')
+        inv_quality_results = adj_broyden_correl(
+            opa,
+            n_runs,
+            random_prescribed,
+            dataset,
+            model_size,
+        )
+        res_name = 'adj_broyden_inv_results_{dataset}_{model_size}'
+        if opa:
+            res_name += '_opa'
+        if not random_prescribed:
+            res_name += '_true_grad'
+        res_name += '.pkl'
+        with open(res_name, 'wb') as f:
+            pickle.dump(inv_quality_results, f)
+
+
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
     n_runs = 100
@@ -280,32 +313,19 @@ if __name__ == '__main__':
             print('With OPA')
         else:
             print('Without OPA')
-        if reload_results:
-            inv_quality_results = adj_broyden_correl(
-                opa,
-                n_runs,
-                random_prescribed,
-                dataset,
-                model_size,
-            )
         res_name = 'adj_broyden_inv_results_{dataset}_{model_size}'
         if opa:
             res_name += '_opa'
         if not random_prescribed:
             res_name += '_true_grad'
         res_name += '.pkl'
-        if save_results:
-            with open(res_name, 'wb') as f:
-                pickle.dump(inv_quality_results, f)
-        else:
-            with open(res_name, 'rb') as f:
-                inv_quality_results = pickle.load(f)
-        if plot_results:
-            present_results(
-                inv_quality_results,
-                opa=opa,
-                random_prescribed=random_prescribed,
-                dataset=dataset,
-                model_size=model_size,
-            )
+        with open(res_name, 'rb') as f:
+            inv_quality_results = pickle.load(f)
+        present_results(
+            inv_quality_results,
+            opa=opa,
+            random_prescribed=random_prescribed,
+            dataset=dataset,
+            model_size=model_size,
+        )
         print('='*20)
