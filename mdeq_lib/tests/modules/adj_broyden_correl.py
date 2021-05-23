@@ -147,7 +147,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
         result_info = adj_broyden(
             g,
             z1_est,
-            threshold=27,
+            threshold=config.MODEL.F_THRES,
             eps=eps,
             name="forward",
             inverse_direction_freq=1 if opa else None,
