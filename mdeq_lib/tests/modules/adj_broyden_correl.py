@@ -127,6 +127,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
         z1_est = DEQFunc2d.list2vec(z_list)
         g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
         directions_dir = {
+            # XXX: change directions in order to have nor roughly the same as the gradient
             'random': torch.randn(z1_est.shape),
             'prescribed': torch.randn(z1_est.shape),
         }
@@ -160,6 +161,8 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
         # compute true incoming gradient if needed
         if not random_prescribed:
             directions_dir['prescribed'] = inverse_direction_fun_vec(z1_est)
+            # making sure the random direction norm is not unrealistic
+            directions_dir['random'] = directions_dir['random'] * torch.norm(directions_dir['prescribed']) / torch.norm(directions_dir['random'])
         # inversion on random gradients
         z1_temp = z1_est.clone().detach().requires_grad_()
         with torch.enable_grad():
@@ -180,6 +183,8 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
                 eps=eps,
                 name="backward",
             )
+            # XXX: make sure inversion happens as planned, i.e. that we perform
+            # enough steps etc...
             true_inv = result_info_inversion['result']
             inv_dir = {
                 'fpn': directions_dir[direction],
@@ -197,6 +202,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
                 inv_quality_results[direction][method]['correl'].append(correl.item())
                 inv_quality_results[direction][method]['ratio'].append(ratio.item())
         y.backward(torch.zeros_like(true_inv), retain_graph=False)
+        # XXX: also get ratio of opa / fpn in order to determine the best threshold for fallback
     return inv_quality_results
 
 
@@ -303,8 +309,8 @@ if __name__ == '__main__':
     save_results = False
     reload_results = False
     plot_results = True
-    dataset = 'imagenet'
-    model_size = 'SMALL'
+    dataset = 'cifar'
+    model_size = 'LARGE'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     for opa in [False, True]:
