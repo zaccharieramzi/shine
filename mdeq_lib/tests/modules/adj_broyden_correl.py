@@ -188,7 +188,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True):
     return inv_quality_results
 
 
-def present_results(inv_quality_results, opa=False):
+def present_results(inv_quality_results, opa=False, random_prescribed=True):
     fig = plt.figure(figsize=(5.5, 2.1))
     g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
     for i in range(3):
@@ -241,15 +241,19 @@ def present_results(inv_quality_results, opa=False):
         title=r'\textbf{Direction}',
     )
     ax_legend.axis('off')
+    fig_name = 'adj_broyden_inversion'
     if opa:
-        plt.savefig('adj_broyden_inversion_opa_scatter.pdf', dpi=300)
-    else:
-        plt.savefig('adj_broyden_inversion_scatter.pdf', dpi=300)
+        fig_name += '_opa'
+    if not random_prescribed:
+        fig_name += '_true_grad'
+    fig_name += 'scatter.pdf'
+    plt.savefig(fig_name, dpi=300)
 
 
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
     n_runs = 100
+    random_prescribed = False
     save_results = False
     reload_results = False
     plot_results = True
@@ -259,7 +263,10 @@ if __name__ == '__main__':
     print('Without OPA')
     if reload_results:
         inv_quality_results = adj_broyden_correl(False, n_runs)
-    res_name = 'adj_broyden_inv_results.pkl'
+    if random_prescribed:
+        res_name = 'adj_broyden_inv_results.pkl'
+    else:
+        res_name = 'adj_broyden_inv_results_true_grad.pkl'
     if save_results:
         with open(res_name, 'wb') as f:
             pickle.dump(inv_quality_results, f)
@@ -267,12 +274,15 @@ if __name__ == '__main__':
         with open(res_name, 'rb') as f:
             inv_quality_results = pickle.load(f)
     if plot_results:
-        present_results(inv_quality_results, opa=False)
+        present_results(inv_quality_results, opa=False, random_prescribed=random_prescribed)
     print('='*20)
     print('With OPA')
     if reload_results:
         inv_quality_results = adj_broyden_correl(True, n_runs)
-    res_name = 'adj_broyden_opa_inv_results.pkl'
+    if random_prescribed:
+        res_name = 'adj_broyden_opa_inv_results.pkl'
+    else:
+        res_name = 'adj_broyden_opa_inv_results_true_grad.pkl'
     if save_results:
         with open(res_name, 'wb') as f:
             pickle.dump(inv_quality_results, f)
@@ -280,5 +290,5 @@ if __name__ == '__main__':
         with open(res_name, 'rb') as f:
             inv_quality_results = pickle.load(f)
     if plot_results:
-        present_results(inv_quality_results, opa=True)
+        present_results(inv_quality_results, opa=True, random_prescribed=random_prescribed)
     print('='*20)
