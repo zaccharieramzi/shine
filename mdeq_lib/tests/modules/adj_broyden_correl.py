@@ -201,8 +201,8 @@ def present_results(inv_quality_results, opa=False):
                 **styles[direction],
             )
             ax.set_title(method_naming[method])
-            ax.set_ylim([0.74, 0.94])
-            ax.set_xlim([1.1, 1.4])
+            # ax.set_ylim([0.74, 0.94])
+            # ax.set_xlim([1.1, 1.4])
             if method == 'shine':
                 ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
             ax.set_xlabel(r'$\|a \|/\| b \|$')
@@ -232,9 +232,9 @@ def present_results(inv_quality_results, opa=False):
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
     n_runs = 100
-    save_results = True
-    reload_results = True
-    plot_results = False
+    save_results = False
+    reload_results = False
+    plot_results = True
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     print('='*20)
