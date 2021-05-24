@@ -157,7 +157,8 @@ def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imag
         Us = result_info['Us']
         VTs = result_info['VTs']
         nstep = result_info['lowest_step']
-        nstep += result_info['n_opa_updates']
+        if opa_freq is not None:
+            nstep += (nstep-1)//opa_freq
         # compute true incoming gradient if needed
         if not random_prescribed:
             directions_dir['prescribed'] = inverse_direction_fun_vec(z1_est)
