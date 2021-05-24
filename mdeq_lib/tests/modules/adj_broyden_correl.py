@@ -79,9 +79,9 @@ def setup_model(opa=False, dataset='imagenet', model_size='SMALL'):
 
     return model
 
-def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet', model_size='LARGE'):
+def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imagenet', model_size='LARGE'):
     # setup
-    model = setup_model(opa, dataset, model_size)
+    model = setup_model(opa_freq is not None, dataset, model_size)
     if dataset == 'imagenet':
         traindir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TRAIN_SET)
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -150,8 +150,8 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
             threshold=config.MODEL.F_THRES,
             eps=eps,
             name="forward",
-            inverse_direction_freq=1 if opa else None,
-            inverse_direction_fun=inverse_direction_fun if opa else None,
+            inverse_direction_freq=opa_freq,
+            inverse_direction_fun=inverse_direction_fun if opa_freq is not None else None,
         )
         z1_est = result_info['result']
         Us = result_info['Us']
@@ -205,7 +205,7 @@ def adj_broyden_correl(opa, n_runs=1, random_prescribed=True, dataset='imagenet'
 
 def present_results(
         inv_quality_results,
-        opa=False,
+        opa_freq=None,
         random_prescribed=True,
         dataset='imagenet',
         model_size='SMALL',
@@ -263,11 +263,11 @@ def present_results(
     )
     ax_legend.axis('off')
     fig_name = 'adj_broyden_inversion'
-    if opa:
-        fig_name += '_opa'
+    if opa is not None:
+        fig_name += f'_opa{opa_freq}'
     if not random_prescribed:
         fig_name += '_true_grad'
-    fig_name += f'scatter_{dataset}_{model_size}.pdf'
+    fig_name += f'_scatter_{dataset}_{model_size}.pdf'
     plt.savefig(fig_name, dpi=300)
 
 
@@ -277,22 +277,22 @@ def save_results(
         dataset='imagenet',
         model_size='SMALL',
 ):
-    for opa in [False, True]:
+    for opa_freq in [None, 1, 5]:
         print('='*20)
-        if opa:
-            print('With OPA')
+        if opa_freq is not None:
+            print(f'With OPA {opa_freq}')
         else:
             print('Without OPA')
         inv_quality_results = adj_broyden_correl(
-            opa,
+            opa_freq,
             n_runs,
             random_prescribed,
             dataset,
             model_size,
         )
         res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
-        if opa:
-            res_name += '_opa'
+        if opa is not None:
+            res_name += f'_opa{opa_freq}'
         if not random_prescribed:
             res_name += '_true_grad'
         res_name += '.pkl'
@@ -310,15 +310,15 @@ if __name__ == '__main__':
     model_size = 'LARGE'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
-    for opa in [False, True]:
+    for opa_freq in [None, 1, 4, 5]:
         print('='*20)
-        if opa:
-            print('With OPA')
+        if opa_freq is not None:
+            print(f'With OPA {opa_freq}')
         else:
             print('Without OPA')
         res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
-        if opa:
-            res_name += '_opa'
+        if opa_freq is not None:
+            res_name += f'_opa{opa_freq}'
         if not random_prescribed:
             res_name += '_true_grad'
         res_name += '.pkl'
@@ -326,7 +326,7 @@ if __name__ == '__main__':
             inv_quality_results = pickle.load(f)
         present_results(
             inv_quality_results,
-            opa=opa,
+            opa_freq=opa_freq,
             random_prescribed=random_prescribed,
             dataset=dataset,
             model_size=model_size,
