@@ -264,7 +264,7 @@ def present_results(
     )
     ax_legend.axis('off')
     fig_name = 'adj_broyden_inversion'
-    if opa is not None:
+    if opa_freq is not None:
         fig_name += f'_opa{opa_freq}'
     if not random_prescribed:
         fig_name += '_true_grad'
