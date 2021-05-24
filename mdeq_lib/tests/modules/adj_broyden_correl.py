@@ -292,7 +292,7 @@ def save_results(
             model_size,
         )
         res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
-        if opa is not None:
+        if opa_freq is not None:
             res_name += f'_opa{opa_freq}'
         if not random_prescribed:
             res_name += '_true_grad'
