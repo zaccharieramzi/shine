@@ -51,6 +51,7 @@ def adj_broyden(
     gx = g(x_est)        # (bsz, 2d, L')
     nstep = 0
     n_updates = 0
+    n_opa_updates = 0
     tnstep = 0
     LBFGS_thres = min(threshold, 27)
 
@@ -70,6 +71,7 @@ def adj_broyden(
     opa = inverse_direction_fun is not None and inverse_direction_freq is not None
     while new_objective >= eps and nstep < threshold:
         if opa and nstep > 1 and nstep % inverse_direction_freq == 0:
+            n_opa_updates += 1
             inverse_direction = inverse_direction_fun(x_est).detach()
             e = matvec(Us[:,:,:,:n_updates], VTs[:,:n_updates], inverse_direction)
             e = e / torch.norm(e) * torch.norm(update)
@@ -154,6 +156,7 @@ def adj_broyden(
             "nstep": nstep,
             "tnstep": tnstep,
             "lowest_step": lowest_step,
+            'n_opa_updates': n_opa_updates,
             "diff": torch.norm(lowest_gx).item(),
             "diff_detail": torch.norm(lowest_gx, dim=1),
             "prot_break": prot_break,
