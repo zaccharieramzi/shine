@@ -130,8 +130,9 @@ class DEQFunc2d(Function):
             Us = result_info['Us']
             VTs = result_info['VTs']
             nstep = result_info['lowest_step']
-            # if adjoint:
-            #     nstep += result_info['n_opa_updates']
+            if adjoint:
+                opa_freq = result_info['opa_freq']
+                nstep += (nstep-1) // opa_freq
             qN_tensors = (Us, VTs, torch.tensor(nstep))
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.

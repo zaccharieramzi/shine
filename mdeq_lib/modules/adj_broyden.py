@@ -157,6 +157,7 @@ def adj_broyden(
             "tnstep": tnstep,
             "lowest_step": lowest_step,
             'n_opa_updates': n_opa_updates,
+            'opa_freq': inverse_direction_freq,
             "diff": torch.norm(lowest_gx).item(),
             "diff_detail": torch.norm(lowest_gx, dim=1),
             "prot_break": prot_break,
