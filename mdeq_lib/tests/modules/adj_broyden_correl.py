@@ -311,7 +311,7 @@ if __name__ == '__main__':
     model_size = 'LARGE'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
-    for opa_freq in [None, 1, 4, 5]:
+    for opa_freq in [None, 1, 5]:
         print('='*20)
         if opa_freq is not None:
             print(f'With OPA {opa_freq}')
