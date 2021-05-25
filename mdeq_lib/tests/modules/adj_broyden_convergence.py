@@ -109,19 +109,22 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
         worker_init_fn=partial(worker_init_fn, seed=42),
     )
     iter_loader = iter(train_loader)
+    solvers = {
+        'adj_broyden': adj_broyden,
+        'broyden': broyden,
+    }
     convergence_results = {
         'correl': [],
         'ratio': [],
         'diff': [],
         'rdiff': [],
     }
+    for solver_name in solvers.keys():
+        convergence_results[f'{solver_name}_rdiff'] = []
+        convergence_results[f'{solver_name}_diff'] = []
     for i_run in range(n_runs):
         input, target = next(iter_loader)
         target = target.cuda(non_blocking=True)
-        solvers = {
-            'adj_broyden': adj_broyden,
-            'broyden': broyden,
-        }
         solvers_results = {}
         for solver_name, solver in solvers.items():
             x_list, z_list = model.feature_extraction(input.cuda())
@@ -162,6 +165,9 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
                 **add_kwargs,
             )
             z1_est = result_info['result']
+            convergence_results[f'{solver_name}_diff'].append(result_info['diff'])
+            lowest_step = result_info['lowest_step']
+            convergence_results[f'{solver_name}_diff'].append(result_info['new_trace'][lowest_step])
             solvers_results[solver_name] = z1_est.clone().detach()
         z1_adj_br = solvers_results['adj_broyden']
         z1_br = solvers_results['broyden']
@@ -216,8 +222,8 @@ if __name__ == '__main__':
     save_results = False
     reload_results = False
     plot_results = True
-    dataset = 'cifar'
-    model_size = 'LARGE'
+    dataset = 'imagenet'
+    model_size = 'SMALL'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     for opa_freq in [None, 1, 5]:
