@@ -20,6 +20,8 @@ class VariationalHidDropout2d(nn.Module):
     def reset_mask(self, x):
         dropout = self.dropout
         spatial = self.spatial
+        import traceback
+        traceback.print_stack()
 
         # x has dimension (N, C, H, W)
         if spatial:
