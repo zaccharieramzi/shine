@@ -58,7 +58,7 @@ def setup_model(opa=False, dataset='imagenet', model_size='SMALL'):
         seed=seed,
         use_group_norm=use_group_norm,
         adjoint_broyden=adjoint_broyden,
-        opa=opa,
+        opa=True,
     )
 
     model = eval('models.'+config.MODEL.NAME+'.get_cls_net')(
@@ -225,8 +225,8 @@ if __name__ == '__main__':
     save_results = False
     reload_results = False
     plot_results = True
-    dataset = 'imagenet'
-    model_size = 'SMALL'
+    dataset = 'cifar'
+    model_size = 'LARGE'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     for opa_freq in [None, 1, 5]:
