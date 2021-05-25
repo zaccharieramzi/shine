@@ -170,10 +170,10 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
             torch.flatten(z1_br),
         )
         scaling = torch.norm(z1_adj_br) * torch.norm(z1_br)
-        convergence_results['correl'].append(correl / scaling)
-        convergence_results['ratio'].append(torch.norm(z1_br) / torch.norm(z1_adj_br))
-        convergence_results['diff'].append(torch.norm(z1_br - z1_adj_br))
-        convergence_results['rdiff'].append(torch.norm(z1_br - z1_adj_br) / torch.norm(z1_br))
+        convergence_results['correl'].append((correl / scaling).item())
+        convergence_results['ratio'].append((torch.norm(z1_br) / torch.norm(z1_adj_br)).item())
+        convergence_results['diff'].append(torch.norm(z1_br - z1_adj_br).item())
+        convergence_results['rdiff'].append((torch.norm(z1_br - z1_adj_br) / torch.norm(z1_br)).item())
 
     return convergence_results
 
