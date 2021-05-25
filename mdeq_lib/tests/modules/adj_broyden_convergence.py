@@ -136,24 +136,30 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
             z1_est = DEQFunc2d.list2vec(z_list)
             g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
             model.copy_modules()
-            loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
-            def inverse_direction_fun_vec(x):
-                x_temp = x.clone().detach().requires_grad_()
-                with torch.enable_grad():
-                    x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
-                    loss = loss_function(x_list)
-                loss.backward()
-                dl_dx = x_temp.grad
-                return dl_dx
-            inverse_direction_fun = inverse_direction_fun_vec
+            if solver_name == 'adj_broyden':
+                loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
+                def inverse_direction_fun_vec(x):
+                    x_temp = x.clone().detach().requires_grad_()
+                    with torch.enable_grad():
+                        x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
+                        loss = loss_function(x_list)
+                    loss.backward()
+                    dl_dx = x_temp.grad
+                    return dl_dx
+                inverse_direction_fun = inverse_direction_fun_vec
+                add_kwargs = dict(
+                    inverse_direction_freq=opa_freq,
+                    inverse_direction_fun=inverse_direction_fun if opa_freq is not None else None,
+                )
+            else:
+                add_kwargs = {}
             result_info = solver(
                 g,
                 z1_est,
                 threshold=config.MODEL.F_THRES,
                 eps=eps,
                 name="forward",
-                inverse_direction_freq=opa_freq if solver_name == 'adj_broyden' else None,
-                inverse_direction_fun=inverse_direction_fun if (opa_freq is not None and solver_name == 'adj_broyden') else None,
+                **add_kwargs,
             )
             z1_est = result_info['result']
             solvers_results[solver_name] = z1_est.clone().detach()
