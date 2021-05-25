@@ -122,6 +122,7 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
     for solver_name in solvers.keys():
         convergence_results[f'{solver_name}_rdiff'] = []
         convergence_results[f'{solver_name}_diff'] = []
+        convergence_results[f'{solver_name}_lstep'] = []
     for i_run in range(n_runs):
         input, target = next(iter_loader)
         target = target.cuda(non_blocking=True)
@@ -167,6 +168,7 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
             z1_est = result_info['result']
             convergence_results[f'{solver_name}_diff'].append(result_info['diff'])
             lowest_step = result_info['lowest_step']
+            convergence_results[f'{solver_name}_lstep'].append(lowest_step)
             convergence_results[f'{solver_name}_rdiff'].append(result_info['new_trace'][lowest_step])
             solvers_results[solver_name] = z1_est.clone().detach()
         z1_adj_br = solvers_results['adj_broyden']
