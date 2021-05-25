@@ -179,71 +179,10 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
 
 
 def present_results(
-        inv_quality_results,
-        opa_freq=None,
-        random_prescribed=True,
-        dataset='imagenet',
-        model_size='SMALL',
+        conv_results,
 ):
-    fig = plt.figure(figsize=(5.5, 2.1))
-    g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
-    for i in range(3):
-        ax = fig.add_subplot(g[0, i])
-    allaxes = fig.get_axes()
-    styles = {
-        'prescribed': dict(color='C2', marker='o'),
-        'random': dict(color='C0', marker='^'),
-    }
-    naming = {
-        'prescribed': 'Additional',
-        'random': 'Random',
-    }
-    method_naming = {
-        'shine': 'SHINE with Adjoint Broyden',
-        'fpn': 'Jacobian-Free method',
-    }
-    for direction, direction_results in inv_quality_results.items():
-        print(direction)
-        for i_method, (method, method_results) in enumerate(direction_results.items()):
-            ax = allaxes[i_method]
-            ax.scatter(
-                # 0 rdiff, 1 ratio, 2 correl
-                method_results['ratio'],
-                method_results['correl'],
-                label=naming[direction],
-                s=3.,
-                **styles[direction],
-            )
-            ax.set_title(method_naming[method])
-            # ax.set_ylim([0.74, 0.94])
-            # ax.set_xlim([1.1, 1.4])
-            if method == 'shine':
-                ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
-            ax.set_xlabel(r'$\|a \|/\| b \|$')
-            median_correl = np.median(method_results['correl'])
-            median_ratio = np.median(method_results['ratio'])
-            print(method, median_correl, median_ratio)
-    handles, labels = ax.get_legend_handles_labels()
-
-    ### legend
-    ax_legend = allaxes[-1]
-    legend = ax_legend.legend(
-        handles,
-        labels,
-        loc='center',
-        ncol=1,
-        handlelength=1.5,
-        handletextpad=.2,
-        title=r'\textbf{Direction}',
-    )
-    ax_legend.axis('off')
-    fig_name = 'adj_broyden_inversion'
-    if opa_freq is not None:
-        fig_name += f'_opa{opa_freq}'
-    if not random_prescribed:
-        fig_name += '_true_grad'
-    fig_name += f'_scatter_{dataset}_{model_size}.pdf'
-    plt.savefig(fig_name, dpi=300)
+    for metric_name, metric_values in conv_results.items():
+        print(metric_name, np.mean(metric_values), np.std(metric_values))
 
 
 def save_results(
@@ -287,19 +226,13 @@ if __name__ == '__main__':
             print(f'With OPA {opa_freq}')
         else:
             print('Without OPA')
-        res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
+        res_name = f'adj_broyden_conv_results_{dataset}_{model_size}'
         if opa_freq is not None:
             res_name += f'_opa{opa_freq}'
-        if not random_prescribed:
-            res_name += '_true_grad'
         res_name += '.pkl'
         with open(res_name, 'rb') as f:
             inv_quality_results = pickle.load(f)
         present_results(
             inv_quality_results,
-            opa_freq=opa_freq,
-            random_prescribed=random_prescribed,
-            dataset=dataset,
-            model_size=model_size,
         )
         print('='*20)
