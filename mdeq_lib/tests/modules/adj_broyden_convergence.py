@@ -167,7 +167,7 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
             z1_est = result_info['result']
             convergence_results[f'{solver_name}_diff'].append(result_info['diff'])
             lowest_step = result_info['lowest_step']
-            convergence_results[f'{solver_name}_diff'].append(result_info['new_trace'][lowest_step])
+            convergence_results[f'{solver_name}_rdiff'].append(result_info['new_trace'][lowest_step])
             solvers_results[solver_name] = z1_est.clone().detach()
         z1_adj_br = solvers_results['adj_broyden']
         z1_br = solvers_results['broyden']
@@ -222,8 +222,8 @@ if __name__ == '__main__':
     save_results = False
     reload_results = False
     plot_results = True
-    dataset = 'imagenet'
-    model_size = 'SMALL'
+    dataset = 'cifar'
+    model_size = 'LARGE'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     for opa_freq in [None, 1, 5]:
