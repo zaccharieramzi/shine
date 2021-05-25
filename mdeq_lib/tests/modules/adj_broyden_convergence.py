@@ -127,12 +127,13 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
         input, target = next(iter_loader)
         target = target.cuda(non_blocking=True)
         solvers_results = {}
+        x_list, z_list = model.feature_extraction(input.cuda())
+        model.fullstage._reset(z_list)
+        model.fullstage_copy._copy(model.fullstage)
         for solver_name, solver in solvers.items():
-            x_list, z_list = model.feature_extraction(input.cuda())
-            model.fullstage._reset(z_list)
-            model.fullstage_copy._copy(model.fullstage)
             # fixed point solving
             x_list = [x.clone().detach().requires_grad_() for x in x_list]
+            z_list = [z.clone() for z in z_list]
             cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
             args = (27, int(1e9), None)
             nelem = sum([elem.nelement() for elem in z_list])
@@ -224,8 +225,8 @@ if __name__ == '__main__':
     save_results = False
     reload_results = False
     plot_results = True
-    dataset = 'cifar'
-    model_size = 'LARGE'
+    dataset = 'imagenet'
+    model_size = 'SMALL'
     print('Ratio is true inv over approx inv')
     print('Results are presented: method, median correl, median ratio')
     for opa_freq in [None, 1, 5]:
