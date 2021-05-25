@@ -156,7 +156,7 @@ def adj_broyden_convergence(opa_freq, n_runs=1, dataset='imagenet', model_size='
                 inverse_direction_fun=inverse_direction_fun if (opa_freq is not None and solver_name == 'adj_broyden') else None,
             )
             z1_est = result_info['result']
-            solvers_results[solver_name] = z1_est.clone.detach()
+            solvers_results[solver_name] = z1_est.clone().detach()
         z1_adj_br = solvers_results['adj_broyden']
         z1_br = solvers_results['broyden']
         correl = torch.dot(
