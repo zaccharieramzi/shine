@@ -237,32 +237,35 @@ def present_results(
 ):
     fig, axs = plt.subplots(
         1, 2, figsize=(5.5, 2.1),
-        gridspec_kw=dict(width_ratios=[0.84, .15], wspace=.3),
+        gridspec_kw=dict(width_ratios=[0.84, .15], wspace=.4),
     )
     naming = {
         'prescribed': 'Additional',
         'random': 'Random',
     }
     method_naming = {
-        'shine': 'SHINE with Broyden',
-        'shine-adj-br': 'SHINE with Adjoint Broyden',
-        'shine-opa': 'SHINE with Adjoint Broyden and OPA',
-        'fpn': 'Jacobian-Free method',
+        'shine': 'SHINE w. Broyden',
+        'shine-adj-br': 'SHINE w. Adj. Broyden',
+        'shine-opa': 'SHINE w. Adj. Broyden / OPA',
+        'fpn': 'Jacobian-Free',
     }
 
     styles = {
-        'shine': dict(color='C2'),
+        'shine': dict(color='C2', alpha=0.7, facecolors='none'),
         'fpn': dict(color='C1'),
         'shine-opa': dict(color='chocolate'),
-        'shine-adj-br': dict(color='navajowhite'),
+        'shine-adj-br': dict(color='tan', alpha=0.7, facecolors='none'),
     }
     ax_scatter = axs[0]
-    for method_name, method_results in methods_results.items():
+    method_names = 'fpn shine shine-adj-br shine-opa'.split()
+    for method_name in method_names:
+        method_results = methods_results[method_name]
         ax_scatter.scatter(
             # 0 rdiff, 1 ratio, 2 correl
             method_results['ratio'],
             method_results['correl'],
-            label=f"{method_naming[method_name]} - {np.median(method_results['correl'])}",
+            # label=f"{method_naming[method_name]} - {np.median(method_results['correl']):.4f}",
+            label=f"{method_naming[method_name]}",
             s=3.,
             **styles[method_name],
         )
@@ -279,8 +282,9 @@ def present_results(
         loc='center',
         ncol=1,
         handlelength=1.5,
-        handletextpad=.2,
-        title=r'\textbf{Method} - median correlation',
+        handletextpad=.1,
+        # title=r'\textbf{Method} - median correlation',
+        title=r'\textbf{Method}',
     )
     ax_legend.axis('off')
     fig_name = 'adj_broyden_inversion'
