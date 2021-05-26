@@ -187,7 +187,7 @@ def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imag
                 y = DEQFunc2d.g(model.fullstage_copy, z1_temp, x_list, cutoffs, *args)
 
             eps = 2e-10
-            for direction_name, direction in directions_dir:
+            for direction_name, direction in directions_dir.items():
                 def g(x):
                     y.backward(x, retain_graph=True)
                     res = z1_temp.grad + direction
