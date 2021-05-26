@@ -4,6 +4,7 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -251,22 +252,29 @@ def present_results(
     }
 
     styles = {
-        'shine': dict(color='C2', alpha=0.7, facecolors='none'),
+        'shine': dict(color='C2', alpha=0.8),
         'fpn': dict(color='C1'),
         'shine-opa': dict(color='chocolate'),
-        'shine-adj-br': dict(color='tan', alpha=0.7, facecolors='none'),
+        'shine-adj-br': dict(color='navajowhite', alpha=0.8),
     }
     ax_scatter = axs[0]
     method_names = 'fpn shine shine-adj-br shine-opa'.split()
     for method_name in method_names:
         method_results = methods_results[method_name]
-        ax_scatter.scatter(
-            # 0 rdiff, 1 ratio, 2 correl
-            method_results['ratio'],
-            method_results['correl'],
-            # label=f"{method_naming[method_name]} - {np.median(method_results['correl']):.4f}",
+        # ax_scatter.scatter(
+        #     method_results['ratio'],
+        #     method_results['correl'],
+        #     # label=f"{method_naming[method_name]} - {np.median(method_results['correl']):.4f}",
+        #     label=f"{method_naming[method_name]}",
+        #     s=3.,
+        #     **styles[method_name],
+        # )
+        sns.kdeplot(
+            x=method_results['ratio'],
+            y=method_results['correl'],
+            ax=ax_scatter,
             label=f"{method_naming[method_name]}",
-            s=3.,
+            cut=2,
             **styles[method_name],
         )
     # XXX: how can we include random inversion ?
