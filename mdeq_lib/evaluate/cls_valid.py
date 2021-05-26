@@ -36,6 +36,7 @@ def evaluate_classifier(
     shine=False,
     fpn=False,
     refine=False,
+    n_refine=None,
     fallback=False,
     n_samples=None,
     seed=0,
@@ -62,6 +63,7 @@ def evaluate_classifier(
         seed=seed,
         use_group_norm=use_group_norm,
         refine=refine,
+        n_refine=n_refine,
         fallback=fallback,
     )
 
