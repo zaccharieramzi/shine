@@ -53,7 +53,9 @@ Args = namedtuple(
 
 def worker_init_fn(worker_id, seed=0):
     """Helper to make random number generation independent in each process."""
-    np.random.seed(8*seed + worker_id)
+    worker_seed = 8*seed + worker_id
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
 
 def update_config_w_args(
     n_epochs=100,
@@ -62,6 +64,7 @@ def update_config_w_args(
     dataset='imagenet',
     model_size='SMALL',
     use_group_norm=False,
+    n_refine=None,
 ):
     if dataset == 'imagenet':
         data_dir = IMAGENET_DIR
@@ -77,6 +80,10 @@ def update_config_w_args(
         opts += [
             'MODEL.PRETRAINED', str(WORK_DIR / 'pretrained_models' / f'MDEQ_{model_size}_Cls.pkl'),
             'TRAIN.PRETRAIN_STEPS', 0,
+        ]
+    if n_refine is not None:
+        opts += [
+            'MODEL.B_THRES', n_refine,
         ]
     args = Args(
         cfg=str(CONFIG_DIR / dataset / f'cls_mdeq_{model_size}.yaml'),
@@ -104,6 +111,7 @@ def train_classifier(
     adjoint_broyden=False,
     opa=False,
     refine=False,
+    n_refine=None,
     fallback=False,
     save_at=None,
     restart_from=None,
@@ -120,6 +128,7 @@ def train_classifier(
         dataset=dataset,
         model_size=model_size,
         use_group_norm=use_group_norm,
+        n_refine=n_refine,
     )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
     torch.multiprocessing.set_start_method('spawn')
@@ -136,6 +145,7 @@ def train_classifier(
         adjoint_broyden=adjoint_broyden,
         opa=opa,
         refine=refine,
+        n_refine=n_refine,
         fallback=fallback,
     )
 

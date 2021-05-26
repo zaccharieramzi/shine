@@ -36,6 +36,7 @@ def evaluate_classifier(
     shine=False,
     fpn=False,
     refine=False,
+    n_refine=None,
     fallback=False,
     n_samples=None,
     seed=0,
@@ -66,6 +67,7 @@ def evaluate_classifier(
         adjoint_broyden=adjoint_broyden,
         opa=opa,
         refine=refine,
+        n_refine=n_refine,
         fallback=fallback,
     )
 
