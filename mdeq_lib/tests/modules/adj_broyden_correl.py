@@ -133,27 +133,28 @@ def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imag
         nelem = sum([elem.nelement() for elem in z_list])
         eps = 1e-5 * np.sqrt(nelem)
         z1_est = DEQFunc2d.list2vec(z_list)
-        g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
         directions_dir = {
             'random': torch.randn(z1_est.shape),
             'prescribed': torch.randn(z1_est.shape),
         }
-        if random_prescribed:
-            inverse_direction_fun = lambda x: directions_dir['prescribed']
-        else:
-            model.copy_modules()
-            loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
-            def inverse_direction_fun_vec(x):
-                x_temp = x.clone().detach().requires_grad_()
-                with torch.enable_grad():
-                    x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
-                    loss = loss_function(x_list)
-                loss.backward()
-                dl_dx = x_temp.grad
-                return dl_dx
-            inverse_direction_fun = inverse_direction_fun_vec
         for method_name in methods_results.keys():
             z1_est = torch.zeros_like(z1_est)
+            g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
+            if random_prescribed:
+                inverse_direction_fun = lambda x: directions_dir['prescribed']
+            else:
+                model.copy_modules()
+                loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
+                def inverse_direction_fun_vec(x):
+                    x_temp = x.clone().detach().requires_grad_()
+                    with torch.enable_grad():
+                        x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
+                        loss = loss_function(x_list)
+                    loss.backward()
+                    dl_dx = x_temp.grad
+                    return dl_dx
+                inverse_direction_fun = inverse_direction_fun_vec
+
             solver = methods_solvers[method_name]
             if 'opa' in method_name:
                 add_kwargs = dict(
