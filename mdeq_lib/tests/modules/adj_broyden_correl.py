@@ -108,9 +108,17 @@ def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imag
         pin_memory=True,
         worker_init_fn=partial(worker_init_fn, seed=42),
     )
-    inv_quality_results = {dir: {
-        k: {'correl': [], 'ratio': []} for k in ['shine', 'fpn']
-    } for dir in ['prescribed', 'random']}
+    methods_results = {
+        method_name: {'correl': [], 'ratio': []}
+        for method_name in ['shine-adj-br', 'shine', 'shine-opa', 'fpn']
+    }
+    methods_solvers = {
+        'shine': broyden,
+        'shine-adj-br': adj_broyden,
+        'shine-opa': adj_broyden,
+        'fpn': broyden,
+    }
+    random_results = {'correl': [], 'ratio': []}
     iter_loader = iter(train_loader)
     for i_run in range(n_runs):
         input, target = next(iter_loader)
@@ -144,53 +152,63 @@ def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imag
                 dl_dx = x_temp.grad
                 return dl_dx
             inverse_direction_fun = inverse_direction_fun_vec
-        result_info = adj_broyden(
-            g,
-            z1_est,
-            threshold=config.MODEL.F_THRES,
-            eps=eps,
-            name="forward",
-            inverse_direction_freq=opa_freq,
-            inverse_direction_fun=inverse_direction_fun if opa_freq is not None else None,
-        )
-        z1_est = result_info['result']
-        Us = result_info['Us']
-        VTs = result_info['VTs']
-        nstep = result_info['lowest_step']
-        if opa_freq is not None:
-            nstep += (nstep-1)//opa_freq
-        # compute true incoming gradient if needed
-        if not random_prescribed:
-            directions_dir['prescribed'] = inverse_direction_fun_vec(z1_est)
-            # making sure the random direction norm is not unrealistic
-            directions_dir['random'] = directions_dir['random'] * torch.norm(directions_dir['prescribed']) / torch.norm(directions_dir['random'])
-        # inversion on random gradients
-        z1_temp = z1_est.clone().detach().requires_grad_()
-        with torch.enable_grad():
-            y = DEQFunc2d.g(model.fullstage_copy, z1_temp, x_list, cutoffs, *args)
-
-        eps = 2e-10
-        for direction in inv_quality_results.keys():
-            def g(x):
-                y.backward(x, retain_graph=True)
-                res = z1_temp.grad + directions_dir[direction]
-                z1_temp.grad.zero_()
-                return res
-            result_info_inversion = broyden(
+        for method_name in methods_results.keys():
+            z1_est = torch.zeros_like(z1_est)
+            solver = methods_solvers[method_name]
+            if 'opa' in method_name:
+                add_kwargs = dict(
+                    inverse_direction_freq=opa_freq,
+                    inverse_direction_fun=inverse_direction_fun if opa_freq is not None else None,
+                )
+            else:
+                add_kwargs = {}
+            result_info = solver(
                 g,
-                directions_dir[direction],  # we initialize Jacobian Free style
-                # in order to accelerate the convergence
-                threshold=35,
+                z1_est,
+                threshold=config.MODEL.F_THRES,
                 eps=eps,
-                name="backward",
+                name="forward",
+                **add_kwargs,
             )
-            true_inv = result_info_inversion['result']
-            inv_dir = {
-                'fpn': directions_dir[direction],
-                'shine': - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], directions_dir[direction]),
-            }
-            for method in inv_quality_results[direction].keys():
-                approx_inv = inv_dir[method]
+            z1_est = result_info['result']
+            Us = result_info['Us']
+            VTs = result_info['VTs']
+            nstep = result_info['lowest_step']
+            if opa_freq is not None:
+                nstep += (nstep-1)//opa_freq
+            # compute true incoming gradient if needed
+            if not random_prescribed:
+                directions_dir['prescribed'] = inverse_direction_fun_vec(z1_est)
+                # making sure the random direction norm is not unrealistic
+                directions_dir['random'] = directions_dir['random'] * torch.norm(directions_dir['prescribed']) / torch.norm(directions_dir['random'])
+            # inversion on random gradients
+            z1_temp = z1_est.clone().detach().requires_grad_()
+            with torch.enable_grad():
+                y = DEQFunc2d.g(model.fullstage_copy, z1_temp, x_list, cutoffs, *args)
+
+            eps = 2e-10
+            for direction_name, direction in directions_dir:
+                def g(x):
+                    y.backward(x, retain_graph=True)
+                    res = z1_temp.grad + direction
+                    z1_temp.grad.zero_()
+                    return res
+                result_info_inversion = broyden(
+                    g,
+                    direction,  # we initialize Jacobian Free style
+                    # in order to accelerate the convergence
+                    threshold=35,
+                    eps=eps,
+                    name="backward",
+                )
+                true_inv = result_info_inversion['result']
+                inv_dir = {
+                    'fpn': direction,
+                    'shine': - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], direction),
+                }
+                inv_dir['shine-opa'] = inv_dir['shine']
+                inv_dir['shine-adj-br'] = inv_dir['shine']
+                approx_inv = inv_dir[method_name]
                 correl = torch.dot(
                     torch.flatten(true_inv),
                     torch.flatten(approx_inv),
@@ -198,14 +216,19 @@ def adj_broyden_correl(opa_freq, n_runs=1, random_prescribed=True, dataset='imag
                 scaling = torch.norm(true_inv) * torch.norm(approx_inv)
                 correl = correl / scaling
                 ratio = torch.norm(true_inv) / torch.norm(approx_inv)
-                inv_quality_results[direction][method]['correl'].append(correl.item())
-                inv_quality_results[direction][method]['ratio'].append(ratio.item())
-        y.backward(torch.zeros_like(true_inv), retain_graph=False)
-    return inv_quality_results
+                if direction_name == 'prescribed':
+                    methods_results[method_name]['correl'].append(correl.item())
+                    methods_results[method_name]['ratio'].append(ratio.item())
+                else:
+                    if method_name == 'fpn':
+                        random_results['correl'].append(correl.item())
+                        random_results['ratio'].append(ratio.item())
+            y.backward(torch.zeros_like(true_inv), retain_graph=False)
+    return methods_results, random_results
 
 
 def present_results(
-        inv_quality_results,
+        methods_results, random_results,
         opa_freq=None,
         random_prescribed=True,
         dataset='imagenet',
@@ -278,58 +301,36 @@ def save_results(
         dataset='imagenet',
         model_size='SMALL',
 ):
-    for opa_freq in [None, 1, 5]:
-        print('='*20)
-        if opa_freq is not None:
-            print(f'With OPA {opa_freq}')
-        else:
-            print('Without OPA')
-        inv_quality_results = adj_broyden_correl(
-            opa_freq,
-            n_runs,
-            random_prescribed,
-            dataset,
-            model_size,
-        )
-        res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
-        if opa_freq is not None:
-            res_name += f'_opa{opa_freq}'
-        if not random_prescribed:
-            res_name += '_true_grad'
-        res_name += '.pkl'
-        with open(res_name, 'wb') as f:
-            pickle.dump(inv_quality_results, f)
+    methods_results, random_results = adj_broyden_correl(
+        5,
+        n_runs,
+        random_prescribed,
+        dataset,
+        model_size,
+    )
+    res_name = f'adj_broyden_inv_results_merged_{dataset}_{model_size}'
+    if not random_prescribed:
+        res_name += '_true_grad'
+    res_name += '.pkl'
+    with open(res_name, 'wb') as f:
+        pickle.dump((methods_results, random_results), f)
 
 
 if __name__ == '__main__':
-    n_runs = 100
     random_prescribed = False
-    save_results = False
-    reload_results = False
-    plot_results = True
+    opa_freq = 5
     dataset = 'cifar'
     model_size = 'LARGE'
-    print('Ratio is true inv over approx inv')
-    print('Results are presented: method, median correl, median ratio')
-    for opa_freq in [None, 1, 5]:
-        print('='*20)
-        if opa_freq is not None:
-            print(f'With OPA {opa_freq}')
-        else:
-            print('Without OPA')
-        res_name = f'adj_broyden_inv_results_{dataset}_{model_size}'
-        if opa_freq is not None:
-            res_name += f'_opa{opa_freq}'
-        if not random_prescribed:
-            res_name += '_true_grad'
-        res_name += '.pkl'
-        with open(res_name, 'rb') as f:
-            inv_quality_results = pickle.load(f)
-        present_results(
-            inv_quality_results,
-            opa_freq=opa_freq,
-            random_prescribed=random_prescribed,
-            dataset=dataset,
-            model_size=model_size,
-        )
-        print('='*20)
+    res_name = f'adj_broyden_inv_results_merged_{dataset}_{model_size}'
+    if not random_prescribed:
+        res_name += '_true_grad'
+    res_name += '.pkl'
+    with open(res_name, 'rb') as f:
+        methods_results, random_results = pickle.load(f)
+    present_results(
+        methods_results, random_results,
+        opa_freq=opa_freq,
+        random_prescribed=random_prescribed,
+        dataset=dataset,
+        model_size=model_size,
+    )
