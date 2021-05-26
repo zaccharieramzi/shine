@@ -248,6 +248,13 @@ def present_results(
         'shine-opa': 'SHINE with Adjoint Broyden and OPA',
         'fpn': 'Jacobian-Free method',
     }
+
+    styles = {
+        'shine': dict(color='C2'),
+        'fpn': dict(color='C1'),
+        'shine-opa': dict(color='chocolate'),
+        'shine-adj-br': dict(color='navajowhite'),
+    }
     ax_scatter = axs[0]
     for method_name, method_results in methods_results.items():
         ax_scatter.scatter(
@@ -256,7 +263,7 @@ def present_results(
             method_results['correl'],
             label=f"{method_naming[method_name]} - {np.median(method_results['correl'])}",
             s=3.,
-            # **styles[method_name],
+            **styles[method_name],
         )
     # XXX: how can we include random inversion ?
     ax_scatter.set_ylabel(r'$\operatorname{cossim}(a, b)$')
