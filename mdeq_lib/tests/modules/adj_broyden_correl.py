@@ -234,48 +234,37 @@ def present_results(
         dataset='imagenet',
         model_size='SMALL',
 ):
-    fig = plt.figure(figsize=(5.5, 2.1))
-    g = plt.GridSpec(1, 3, width_ratios=[0.42, 0.42, .15], wspace=.3)
-    for i in range(3):
-        ax = fig.add_subplot(g[0, i])
-    allaxes = fig.get_axes()
-    styles = {
-        'prescribed': dict(color='C2', marker='o'),
-        'random': dict(color='C0', marker='^'),
-    }
+    fig, axs = plt.subplots(
+        1, 2, figsize=(5.5, 2.1),
+        gridspec_kw=dict(width_ratios=[0.84, .15], wspace=.3),
+    )
     naming = {
         'prescribed': 'Additional',
         'random': 'Random',
     }
     method_naming = {
-        'shine': 'SHINE with Adjoint Broyden',
+        'shine': 'SHINE with Broyden',
+        'shine-adj-br': 'SHINE with Adjoint Broyden',
+        'shine-opa': 'SHINE with Adjoint Broyden and OPA',
         'fpn': 'Jacobian-Free method',
     }
-    for direction, direction_results in inv_quality_results.items():
-        print(direction)
-        for i_method, (method, method_results) in enumerate(direction_results.items()):
-            ax = allaxes[i_method]
-            ax.scatter(
-                # 0 rdiff, 1 ratio, 2 correl
-                method_results['ratio'],
-                method_results['correl'],
-                label=naming[direction],
-                s=3.,
-                **styles[direction],
-            )
-            ax.set_title(method_naming[method])
-            # ax.set_ylim([0.74, 0.94])
-            # ax.set_xlim([1.1, 1.4])
-            if method == 'shine':
-                ax.set_ylabel(r'$\operatorname{cossim}(a, b)$')
-            ax.set_xlabel(r'$\|a \|/\| b \|$')
-            median_correl = np.median(method_results['correl'])
-            median_ratio = np.median(method_results['ratio'])
-            print(method, median_correl, median_ratio)
-    handles, labels = ax.get_legend_handles_labels()
+    ax_scatter = axs[0]
+    for method_name, method_results in methods_results.items():
+        ax_scatter.scatter(
+            # 0 rdiff, 1 ratio, 2 correl
+            method_results['ratio'],
+            method_results['correl'],
+            label=f"{method_naming[method_name]} - {np.median(method_results['correl'])}",
+            s=3.,
+            # **styles[method_name],
+        )
+    # XXX: how can we include random inversion ?
+    ax_scatter.set_ylabel(r'$\operatorname{cossim}(a, b)$')
+    ax_scatter.set_xlabel(r'$\|a \|/\| b \|$')
+    handles, labels = ax_scatter.get_legend_handles_labels()
 
     ### legend
-    ax_legend = allaxes[-1]
+    ax_legend = axs[-1]
     legend = ax_legend.legend(
         handles,
         labels,
@@ -283,7 +272,7 @@ def present_results(
         ncol=1,
         handlelength=1.5,
         handletextpad=.2,
-        title=r'\textbf{Direction}',
+        title=r'\textbf{Method} - median correlation',
     )
     ax_legend.axis('off')
     fig_name = 'adj_broyden_inversion'
@@ -291,7 +280,7 @@ def present_results(
         fig_name += f'_opa{opa_freq}'
     if not random_prescribed:
         fig_name += '_true_grad'
-    fig_name += f'_scatter_{dataset}_{model_size}.pdf'
+    fig_name += f'_scatter_merged_{dataset}_{model_size}.pdf'
     plt.savefig(fig_name, dpi=300)
 
 
