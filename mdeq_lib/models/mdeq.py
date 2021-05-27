@@ -304,10 +304,14 @@ class MDEQClsNet(MDEQNet):
 
     def forward(self, x, train_step=0, **kwargs):
         if self.opa:
+            state = torch.get_rng_state()
+            cuda_state = torch.cuda.get_rng_state(x.device)
             true_y = kwargs.get('y', None)
             self.copy_modules()
             loss_function = lambda y_est: self.get_fixed_point_loss(y_est, true_y)
             kwargs['loss_function'] = loss_function
+            torch.set_rng_state(state)
+            torch.cuda.set_rng_state(cuda_state, x.device)
         y_list = self._forward(x, train_step, **kwargs)
         y = self.apply_classification_head(y_list)
         return y
