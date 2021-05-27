@@ -1,5 +1,3 @@
-import copy
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -65,7 +63,6 @@ results_imagenet = {
 
 fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
 g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
-handles = []
 labels = [
     'Original Method',
     r'\textbf{SHINE (ours)}',
@@ -91,7 +88,7 @@ markers_style = {
     5: 'p',
     7: 'x',
     10: 'D',
-    20: '8',
+    20: 'v',
     27: '*',
 }
 
@@ -119,14 +116,12 @@ for xp_name, xp_res in results_cifar.items():
         ep = ax_cifar.errorbar(
             x,
             y,
-            ms=2,
+            ms=2.5,
             yerr=e,
             color=color_scheme[method_name],
             fmt=markers_style[n_refine],
             capsize=1,
         )
-        if xp_name == 0 or xp_name is None:
-            handles.append(ep[0])
 
 #curves sorting/plotting
 for k, (x, y) in curves.items():
@@ -166,7 +161,11 @@ ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch 
 g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.005, bottom=0.05, top=0.15)
 ax_legend = fig.add_subplot(g_legend[0, 0])
 ax_legend.axis('off')
-ax_legend.legend(handles, labels, loc='center', ncol=3, handlelength=1.5, handletextpad=.1)
+handles = [
+    plt.Rectangle([0, 0], 0.1, 0.1, color=f'C{i}')
+    for i in [0, 2, 1]
+]
+ax_legend.legend(handles, labels, loc='center', ncol=3, handlelength=1., handletextpad=.5)
 # legend markers
 ax_legend = fig.add_subplot(g_legend[1, 0])
 ax_legend.axis('off')
