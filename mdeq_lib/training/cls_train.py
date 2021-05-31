@@ -131,7 +131,10 @@ def train_classifier(
         n_refine=n_refine,
     )
     print(colored("Setting default tensor type to cuda.FloatTensor", "cyan"))
-    torch.multiprocessing.set_start_method('spawn')
+    try:
+        torch.multiprocessing.set_start_method('spawn')
+    except RuntimeError:
+        pass
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
     logger, final_output_dir, tb_log_dir = create_logger(
