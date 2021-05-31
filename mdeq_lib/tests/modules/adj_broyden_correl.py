@@ -252,32 +252,22 @@ def present_results(
     }
 
     styles = {
-        'shine': dict(color='C2', alpha=0.8),
+        'shine': dict(color='C2', alpha=0.5),
         'fpn': dict(color='C1'),
         'shine-opa': dict(color='chocolate'),
-        'shine-adj-br': dict(color='navajowhite', alpha=0.8),
+        'shine-adj-br': dict(color='navajowhite', alpha=0.65),
     }
     ax_scatter = axs[0]
     method_names = 'fpn shine shine-adj-br shine-opa'.split()
     for method_name in method_names:
         method_results = methods_results[method_name]
-        # ax_scatter.scatter(
-        #     method_results['ratio'],
-        #     method_results['correl'],
-        #     # label=f"{method_naming[method_name]} - {np.median(method_results['correl']):.4f}",
-        #     label=f"{method_naming[method_name]}",
-        #     s=3.,
-        #     **styles[method_name],
-        # )
-        sns.kdeplot(
-            x=method_results['ratio'],
-            y=method_results['correl'],
-            ax=ax_scatter,
+        ax_scatter.scatter(
+            method_results['ratio'],
+            method_results['correl'],
             label=f"{method_naming[method_name]}",
-            cut=2,
+            s=3.,
             **styles[method_name],
         )
-    # XXX: how can we include random inversion ?
     ax_scatter.set_ylabel(r'$\operatorname{cossim}(a, b)$')
     ax_scatter.set_xlabel(r'$\|a \|/\| b \|$')
     handles, labels = ax_scatter.get_legend_handles_labels()
@@ -291,7 +281,6 @@ def present_results(
         ncol=1,
         handlelength=1.5,
         handletextpad=.1,
-        # title=r'\textbf{Method} - median correlation',
         title=r'\textbf{Method}',
     )
     ax_legend.axis('off')
