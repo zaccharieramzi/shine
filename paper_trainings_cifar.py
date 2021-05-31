@@ -15,6 +15,8 @@ def parse_n_refine(n_refine):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Train CIFAR MDEQ models with different techniques.')
+    parser.add_argument('--n_gpus', '-g', default=4,
+                        help='The number of GPUs to use.')
     parser.add_argument('--n_runs', '-n', default=5,
                         help='Number of seeds to use for the figure. Defaults to 5.')
     parser.add_argument('--refines', '-r', default='0,1,2,5,7,10,None',
@@ -22,9 +24,9 @@ if __name__ == '__main__':
                         'Use None to indicate the default number of steps. Defaults to 0,1,2,5,7,10,None')
     args = parser.parse_args()
     n_runs = int(args.n_runs)
-    n_gpus = 4
+    n_gpus = int(args.n_gpus)
     n_epochs = 220
-    n_refines = [parse_n_refine(n_refine.strip()) for n_refine in n_refines.split(',')]
+    n_refines = [parse_n_refine(n_refine.strip()) for n_refine in args.refines.split(',')]
     base_params = dict(
         model_size='LARGE',
         dataset='cifar',
