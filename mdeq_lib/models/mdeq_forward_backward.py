@@ -22,6 +22,7 @@ class MDEQWrapper(DEQModule2d):
             fpn=False,
             gradient_correl=False,
             gradient_ratio=False,
+            adjoint_broyden=False,
             refine=False,
             fallback=False,
     ):
@@ -32,6 +33,7 @@ class MDEQWrapper(DEQModule2d):
             fpn=fpn,
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
+            adjoint_broyden=adjoint_broyden,
             refine=refine,
             fallback=fallback,
         )
@@ -42,11 +44,24 @@ class MDEQWrapper(DEQModule2d):
         b_threshold = kwargs.get('b_threshold', threshold)
         lim_mem = kwargs.get('lim_mem', 27)
         writer = kwargs.get('writer', None)
+        opa_freq = kwargs.get('opa_freq', 5)
+        loss_function = kwargs.get('loss_function', None)
 
         if u is None:
             raise ValueError("Input injection is required.")
 
-        forward_out = DEQFunc2d.apply(self.func, z1, u, threshold, train_step, writer, lim_mem)
+        forward_out = DEQFunc2d.apply(
+            self.func_copy,
+            z1,
+            u,
+            self.adjoint_broyden if train_step > -1 else False,
+            threshold,
+            train_step,
+            writer,
+            opa_freq,
+            loss_function,
+            lim_mem,
+        )
         new_z1 = list(forward_out[:-3])
         # qN_tensors = (Us, VTs, nstep)
         qN_tensors = forward_out[-3:]

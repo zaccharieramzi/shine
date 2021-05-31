@@ -61,7 +61,7 @@ def scalar_search_armijo(phi, phi0, derphi0, c1=1e-4, alpha0=1, amin=0):
     return None, phi_a1, ite
 
 
-def line_search(update, x0, g0, g, nstep=0, on=True):
+def line_search(update, x0, g0, g, nstep=0, on=True, compute_g=True):
     """
     `update` is the propsoed direction of update.
 
@@ -91,11 +91,14 @@ def line_search(update, x0, g0, g, nstep=0, on=True):
         ite = 0
 
     x_est = x0 + s * update
-    if s == tmp_s[0]:
-        g0_new = tmp_g0[0]
+    if compute_g:
+        if s == tmp_s[0]:
+            g0_new = tmp_g0[0]
+        else:
+            g0_new = g(x_est)
+        return x_est, g0_new, x_est - x0, g0_new - g0, ite
     else:
-        g0_new = g(x_est)
-    return x_est, g0_new, x_est - x0, g0_new - g0, ite
+        return x_est, x_est - x0, ite
 
 def rmatvec(part_Us, part_VTs, x):
     # Compute x^T(-I + UV^T)

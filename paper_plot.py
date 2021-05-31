@@ -6,7 +6,7 @@ plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
-esults_cifar = {
+results_cifar = {
     None: {
         'original': {'perf': (93.512, 0.15210626), 'time': (14.5, 0), 'backward-time': (209)},
         'shine': {'perf': (93.506, 0.18445666), 'time': (11.5, 0), 'backward-time': (273)},
@@ -61,13 +61,12 @@ results_imagenet = {
     },
 }
 
-fig = plt.figure(figsize=(5.5, 2.1))
-g = fig.add_gridspec(1, 3, width_ratios=[0.44, 0.44, .1], wspace=.3)
-handles = []
+fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
+g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
 labels = [
     'Original Method',
+    r'\textbf{SHINE (ours)}',
     'Jacobian-Free',
-    'SHINE',
 ]
 color_scheme = {
     'original': 'C0',
@@ -82,10 +81,21 @@ naming_scheme = {
     'shine-fallback': 'SH',
 }
 
+markers_style = {
+    0: 'o',
+    1: '^',
+    2: 's',
+    5: 'p',
+    7: 'x',
+    10: 'D',
+    20: 'v',
+    27: '*',
+}
+
 annotation_offset = {
    (None, 'original'): (-13, -3.8) ,
-#    (5, 'original'): (-45, 6) ,
-('SMALL', 'original'): (-13, -3.8),
+    ('SMALL', 'original'): (-13, -3.8),
+    ('SMALL-refine', 'fpn'): (-13, -3.8),
 }
 
 curves = {
@@ -102,37 +112,26 @@ for xp_name, xp_res in results_cifar.items():
         e = method_res['perf'][1]
         curves[method_name][0].append(x)
         curves[method_name][1].append(y)
-
+        n_refine = xp_name if xp_name is not None else 20
         ep = ax_cifar.errorbar(
             x,
             y,
+            ms=2.5,
             yerr=e,
             color=color_scheme[method_name],
-            fmt='o',
+            fmt=markers_style[n_refine],
+            capsize=1,
         )
-        if xp_name == 0 or xp_name is None:
-            handles.append(ep[0])
-        n_refine = xp_name if xp_name is not None else 20
-        if n_refine == 0:
-            ax_cifar.annotate(
-    #             f'{naming_scheme[method_name]} - {n_refine}',
-                f'{n_refine}',
-                (x, y),
-                annotation_offset.get((xp_name, method_name), (3.5, -3.8)),
-                textcoords='offset points',
-            )
 
 #curves sorting/plotting
 for k, (x, y) in curves.items():
     idx = np.argsort(x)
     x_sorted, y_sorted = [x[i] for i in idx], [y[i] for i in idx]
     ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
-# ax_cifar.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
-ax_cifar.set_ylabel('Top-1 accuracy (\%)', fontsize=9)
 ax_cifar.set_title('CIFAR10')
 
 #Imagenet
-ax_imagenet = fig.add_subplot(g[0, 1])
+ax_imagenet = fig.add_subplot(g[1, 0])
 for xp_name, xp_res in results_imagenet.items():
     if xp_name == 'TINY':
         continue
@@ -140,13 +139,6 @@ for xp_name, xp_res in results_imagenet.items():
         x = method_res['backward-time']
         y = method_res['perf'][0]
         e = method_res['perf'][1]
-        ax_imagenet.errorbar(
-            x,
-            y,
-            yerr=e,
-            color=color_scheme[method_name],
-            fmt='o',
-        )
         if xp_name == 'SMALL-refine':
             n_refine = 5
         else:
@@ -154,22 +146,52 @@ for xp_name, xp_res in results_imagenet.items():
                 n_refine = 27
             else:
                 n_refine = 0
-        ax_imagenet.annotate(
-#             f'{naming_scheme[method_name]} - {-1}',
-            f'{n_refine}',
-            (x, y),
-            annotation_offset.get((xp_name, method_name), (10, -3.8)),
-            textcoords='offset points',
+        ep = ax_imagenet.errorbar(
+            x,
+            y,
+            ms=3,
+            yerr=e,
+            color=color_scheme[method_name],
+            fmt=markers_style[n_refine],
         )
 ax_imagenet.set_title('ImageNet')
+ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
 
 # legend
-ax_legend = fig.add_subplot(g[0, 2])
+g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.005, bottom=0.05, top=0.15)
+ax_legend = fig.add_subplot(g_legend[0, 0])
 ax_legend.axis('off')
-ax_legend.legend(handles, labels, loc='center', ncol=1, handlelength=1.5, handletextpad=.1)
+handles = [
+    plt.Rectangle([0, 0], 0.1, 0.1, color=f'C{i}')
+    for i in [0, 2, 1]
+]
+ax_legend.legend(handles, labels, loc='center', ncol=3, handlelength=1., handletextpad=.5)
+# legend markers
+ax_legend = fig.add_subplot(g_legend[1, 0])
+ax_legend.axis('off')
+handles_markers = []
+markers_labels = []
+for marker_name, marker_style in markers_style.items():
+    pts = plt.scatter([0], [0], marker=marker_style, c='black', label=marker_name)
+    handles_markers.append(pts)
+    markers_labels.append(marker_name)
+    pts.remove()
+# for title
+ph = [plt.plot([],marker="", ls="")[0]] # Canvas
+handles_markers = ph + handles_markers
+markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+ax_legend.legend(
+    handles_markers,
+    markers_labels,
+    loc='center',
+    ncol=len(markers_labels)+1,
+    handlelength=1.5,
+    handletextpad=.1,
+    columnspacing=1.,
+)
 
-fig.add_subplot(111, frameon=False)
-plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-plt.xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32', loc='left', fontsize=9)
+
+fig.supylabel(r'Top-1 accuracy (\%)')
+
 
 fig.savefig('merged_results_latency_style.pdf', dpi=300);

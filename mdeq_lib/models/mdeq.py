@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import os
 import sys
 import logging
@@ -71,6 +72,23 @@ class Bottleneck(nn.Module):
 
         return out
 
+    def _copy(self, other):
+        self.conv1.weight.data = other.conv1.weight.data.clone()
+        self.conv2.weight.data = other.conv2.weight.data.clone()
+        self.conv3.weight.data = other.conv3.weight.data.clone()
+        self.bn1.running_mean.data = other.bn1.running_mean.data.clone()
+        self.bn1.running_var.data = other.bn1.running_var.data.clone()
+        self.bn2.running_mean.data = other.bn2.running_mean.data.clone()
+        self.bn2.running_var.data = other.bn2.running_var.data.clone()
+        self.bn3.running_var.data = other.bn3.running_var.data.clone()
+        self.bn3.running_mean.data = other.bn3.running_mean.data.clone()
+        if self.downsample:
+            self.downsample[0].weight.data = other.downsample[0].weight.data
+            self.downsample[1].weight.data = other.downsample[1].weight.data
+            self.downsample[1].bias.data = other.downsample[1].bias.data
+            self.downsample[1].running_mean.data = other.downsample[1].running_mean.data
+            self.downsample[1].running_var.data = other.downsample[1].running_var.data
+
 class BottleneckGroup(nn.Module):
     expansion = 4
 
@@ -117,7 +135,7 @@ class BottleneckGroup(nn.Module):
 
 
 class MDEQClsNet(MDEQNet):
-    def __init__(self, cfg, **kwargs):
+    def __init__(self, cfg, opa=False, **kwargs):
         """
         Build an MDEQ Classification model with the given hyperparameters
         """
@@ -131,6 +149,9 @@ class MDEQClsNet(MDEQNet):
         # Classification Head
         self.incre_modules, self.downsamp_modules, self.final_layer = self._make_head(self.num_channels)
         self.classifier = nn.Linear(self.final_chansize, self.num_classes)
+        # criterion setting
+        self.criterion = nn.CrossEntropyLoss().cuda()
+        self.opa = opa
 
     def _make_head(self, pre_stage_channels):
         """
@@ -161,29 +182,37 @@ class MDEQClsNet(MDEQNet):
             in_channels = head_channels[i] * Bottleneck.expansion
             out_channels = head_channels[i+1] * Bottleneck.expansion
 
-            downsamp_module = nn.Sequential(conv3x3(in_channels, out_channels, stride=2, bias=True),
-                                            norm(out_channels),
-                                            nn.ReLU(inplace=True))
+            downsamp_module = nn.Sequential(
+                conv3x3(in_channels, out_channels, stride=2, bias=True),
+                norm(out_channels),
+                nn.ReLU(inplace=True),
+            )
             downsamp_modules.append(downsamp_module)
         downsamp_modules = nn.ModuleList(downsamp_modules)
 
         # Final FC layers
-        final_layer = nn.Sequential(nn.Conv2d(head_channels[len(pre_stage_channels)-1] * Bottleneck.expansion,
-                                              self.final_chansize,
-                                              kernel_size=1,
-                                              stride=1,
-                                              padding=0),
-                                    # NOTE: on the advice of Shaojie we keep this
-                                    # no matter if we use group norm
-                                    nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM),
-                                    nn.ReLU(inplace=True))
+        final_layer = nn.Sequential(
+            nn.Conv2d(
+                head_channels[len(pre_stage_channels)-1] * Bottleneck.expansion,
+                self.final_chansize,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            ),
+            # NOTE: on the advice of Shaojie we keep this
+            # no matter if we use group norm
+            nn.BatchNorm2d(self.final_chansize, momentum=BN_MOMENTUM),
+            nn.ReLU(inplace=True),
+        )
         return incre_modules, downsamp_modules, final_layer
 
     def _make_layer(self, block, inplanes, planes, blocks, stride=1, norm=None):
         downsample = None
         if stride != 1 or inplanes != planes * Bottleneck.expansion:
-            downsample = nn.Sequential(nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False),
-                norm(planes * Bottleneck.expansion))
+            downsample = nn.Sequential(
+                nn.Conv2d(inplanes, planes*Bottleneck.expansion, kernel_size=1, stride=stride, bias=False),
+                norm(planes * Bottleneck.expansion),
+            )
 
         layers = []
         layers.append(block(inplanes, planes, stride, downsample))
@@ -193,9 +222,7 @@ class MDEQClsNet(MDEQNet):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, train_step=0, **kwargs):
-        y_list = self._forward(x, train_step, **kwargs)
-
+    def apply_classification_head(self, y_list):
         # Classification Head
         y = self.incre_modules[0](y_list[0])
         for i in range(len(self.downsamp_modules)):
@@ -208,7 +235,85 @@ class MDEQClsNet(MDEQNet):
         else:
             y = F.avg_pool2d(y, kernel_size=y.size()[2:]).view(y.size(0), -1)
         y = self.classifier(y)
+        return y
 
+    def apply_classification_head_copy(self, y_list):
+        # Classification Head
+        y = self.incre_modules_copy[0](y_list[0])
+        for i in range(len(self.downsamp_modules_copy)):
+            y = self.incre_modules_copy[i+1](y_list[i+1]) + self.downsamp_modules_copy[i](y)
+        y = self.final_layer_copy(y)
+
+        # Pool to a 1x1 vector (if needed)
+        if torch._C._get_tracing_state():
+            y = y.flatten(start_dim=2).mean(dim=2)
+        else:
+            y = F.avg_pool2d(y, kernel_size=y.size()[2:]).view(y.size(0), -1)
+        y = self.classifier_copy(y)
+        return y
+
+    def copy_modules(self):
+        self.classifier_copy =  nn.Linear(self.final_chansize, self.num_classes)
+        self.incre_modules_copy, self.downsamp_modules_copy, self.final_layer_copy = self._make_head(self.num_channels)
+        # incre modules
+        for i_incr_module in range(len(self.incre_modules)):
+            incre_module = self.incre_modules[i_incr_module]
+            incre_module_copy = self.incre_modules_copy[i_incr_module]
+            for i_layer in range(len(incre_module)):
+                layer = incre_module[i_layer]
+                layer_copy = incre_module_copy[i_layer]
+                layer_copy._copy(layer)
+
+        # downsample modules
+        for i_downsamp_module in range(len(self.downsamp_modules)):
+            downsamp_module = self.downsamp_modules[i_downsamp_module]
+            downsamp_module_copy = self.downsamp_modules_copy[i_downsamp_module]
+            downsamp_module_copy[0].weight.data = downsamp_module[0].weight.data.clone()
+            downsamp_module_copy[0].bias.data = downsamp_module[0].bias.data.clone()
+            downsamp_module_copy[1].weight.data = downsamp_module[1].weight.data.clone()
+            downsamp_module_copy[1].bias.data = downsamp_module[1].bias.data.clone()
+            downsamp_module_copy[1].running_mean.data = downsamp_module[1].running_mean.data.clone()
+            downsamp_module_copy[1].running_var.data = downsamp_module[1].running_var.data.clone()
+
+        # final layer
+        self.final_layer_copy[0].weight.data = self.final_layer[0].weight.data.clone()
+        self.final_layer_copy[0].bias.data = self.final_layer[0].bias.data.clone()
+        self.final_layer_copy[1].weight.data = self.final_layer[1].weight.data.clone()
+        self.final_layer_copy[1].bias.data = self.final_layer[1].bias.data.clone()
+        self.final_layer_copy[1].running_mean.data = self.final_layer[1].running_mean.data.clone()
+        self.final_layer_copy[1].running_var.data = self.final_layer[1].running_var.data.clone()
+
+        # classifier
+        self.classifier_copy.weight.data = self.classifier.weight.data.clone()
+        self.classifier_copy.bias.data = self.classifier.bias.data.clone()
+
+        copy_modules = [
+            self.incre_modules_copy,
+            self.downsamp_modules_copy,
+            self.final_layer_copy,
+            self.classifier_copy,
+        ]
+        for module in copy_modules:
+            for param in module.parameters():
+                param.requires_grad_(False)
+
+
+    def get_fixed_point_loss(self, y_est, true_y):
+        loss = self.criterion(self.apply_classification_head_copy(y_est), true_y)
+        return loss
+
+    def forward(self, x, train_step=0, **kwargs):
+        if self.opa:
+            state = torch.get_rng_state()
+            cuda_state = torch.cuda.get_rng_state(x.device)
+            true_y = kwargs.get('y', None)
+            self.copy_modules()
+            loss_function = lambda y_est: self.get_fixed_point_loss(y_est, true_y)
+            kwargs['loss_function'] = loss_function
+            torch.set_rng_state(state)
+            torch.cuda.set_rng_state(cuda_state, x.device)
+        y_list = self._forward(x, train_step, **kwargs)
+        y = self.apply_classification_head(y_list)
         return y
 
     def init_weights(self, pretrained='',):

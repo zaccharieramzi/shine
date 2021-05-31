@@ -359,6 +359,7 @@ class MDEQNet(nn.Module):
             fpn=False,
             gradient_correl=False,
             gradient_ratio=False,
+            adjoint_broyden=False,
             refine=False,
             fallback=False,
             **kwargs,
@@ -414,6 +415,7 @@ class MDEQNet(nn.Module):
             fpn=fpn,
             gradient_correl=gradient_correl,
             gradient_ratio=gradient_ratio,
+            adjoint_broyden=adjoint_broyden,
             refine=refine,
             fallback=fallback,
         )
@@ -432,6 +434,7 @@ class MDEQNet(nn.Module):
         self.lim_mem = cfg['MODEL']['LIM_MEM']
         if self.lim_mem is None:
             self.lim_mem = self.f_thres
+        self.opa_freq = cfg['MODEL']['OPA_FREQ']
         self.num_classes = cfg['MODEL']['NUM_CLASSES']
         self.downsample_times = cfg['MODEL']['DOWNSAMPLE_TIMES']
         self.pretrain_steps = cfg['TRAIN']['PRETRAIN_STEPS']
@@ -451,16 +454,8 @@ class MDEQNet(nn.Module):
 
         return MDEQModule(num_branches, block_type, num_blocks, num_channels, fuse_method, dropout=dropout)
 
-    def _forward(self, x, train_step=-1, **kwargs):
-        """
-        The core MDEQ module. In the starting phase, we can (optionally) enter a shallow stacked f_\theta training mode
-        to warm up the weights (specified by the self.pretrain_steps; see below)
-        """
+    def feature_extraction(self, x):
         num_branches = self.num_branches
-        f_thres = kwargs.get('f_thres', self.f_thres)
-        b_thres = kwargs.get('b_thres', self.b_thres)
-        lim_mem = kwargs.get('lim_mem', self.lim_mem)
-        writer = kwargs.get('writer', None)     # For tensorboard
         x = self.downsample(x)
         dev = x.device
 
@@ -471,6 +466,21 @@ class MDEQNet(nn.Module):
             x_list.append(torch.zeros(bsz, self.num_channels[i], H//2, W//2).to(dev))   # ... and the rest are all zeros
 
         z_list = [torch.zeros_like(elem) for elem in x_list]
+        return x_list, z_list
+
+    def _forward(self, x, train_step=-1, **kwargs):
+        """
+        The core MDEQ module. In the starting phase, we can (optionally) enter a shallow stacked f_\theta training mode
+        to warm up the weights (specified by the self.pretrain_steps; see below)
+        """
+        f_thres = kwargs.get('f_thres', self.f_thres)
+        b_thres = kwargs.get('b_thres', self.b_thres)
+        lim_mem = kwargs.get('lim_mem', self.lim_mem)
+        opa_freq = kwargs.get('opa_freq', self.opa_freq)
+        loss_function = kwargs.get('loss_function', None)
+        writer = kwargs.get('writer', None)     # For tensorboard
+
+        x_list, z_list = self.feature_extraction(x)
 
         # For variational dropout mask resetting and weight normalization re-computations
         self.fullstage._reset(z_list)
@@ -491,6 +501,8 @@ class MDEQNet(nn.Module):
                 writer=writer,
                 b_threshold=b_thres,
                 lim_mem=lim_mem,
+                opa_freq=opa_freq,
+                loss_function=loss_function,
             )
 
         y_list = self.iodrop(z_list)

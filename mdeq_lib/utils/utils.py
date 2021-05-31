@@ -86,6 +86,8 @@ def create_logger(
     phase='train',
     shine=False,
     fpn=False,
+    adjoint_broyden=False,
+    opa=False,
     refine=False,
     n_refine=None,
     fallback=False,
@@ -107,6 +109,10 @@ def create_logger(
         cfg_name += '_fpn'
     if use_group_norm:
         cfg_name += '_gn'
+    if adjoint_broyden:
+        cfg_name += '_adjbroyden'
+    if opa:
+        cfg_name += '_opa'
     if refine:
         cfg_name += '_ref'
         if n_refine is not None:
