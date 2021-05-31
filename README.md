@@ -6,6 +6,7 @@ This source code allows to reproduce the experiments on multiscale DEQs, i.e. Fi
 ## General instructions
 
 You need Python 3.7 or above to run this code.
+This code will only run on a computer equipped with a GPU.
 You can then install the requirements with: `pip install -r requirements.txt`.
 
 
