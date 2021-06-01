@@ -2,7 +2,7 @@ import argparse
 
 import pandas as pd
 
-from mdeq_lib.debug.cls_gra_time import train_classifier
+from mdeq_lib.debug.cls_grad_time import train_classifier
 
 
 if __name__ == '__main__':
@@ -31,20 +31,28 @@ if __name__ == '__main__':
         gradient_correl=False,
         gradient_ratio=False,
         compute_partial=True,
+        compute_total=False,
         f_thres_range=range(18, 19) if dataset == 'cifar' else range(27,28),
         n_samples=300,
     )
     parameters = []
-for n_refine in n_refines:
-    refine_active = n_refine > 0 or n_refine is None
-    if refine_active:
-        base_params.update(n_refine=n_refine)
-    if n_refine != 0:
-        parameters += [
-            dict(**base_params),
-        ]
-    if n_refine is not None or dataset == 'cifar':
-        parameters += [
-            dict(shine=True, refine=refine_active, **base_params),
-            dict(fpn=True, refine=refine_active, **base_params),
-        ]
+    for n_refine in n_refines:
+        refine_active = n_refine > 0 or n_refine is None
+        if refine_active:
+            base_params.update(n_refine=n_refine)
+        if n_refine != 0:
+            parameters += [
+                dict(**base_params),
+            ]
+        if n_refine is not None or dataset == 'cifar':
+            parameters += [
+                dict(shine=True, refine=refine_active, **base_params),
+                dict(fpn=True, refine=refine_active, **base_params),
+            ]
+    res_data = []
+    for params in parameters:
+        median_backward = train_classifier(**params)
+        data = dict(median_backward=median_backward, **params)
+        res_data.append(data)
+    res_df = pd.DataFrame(res_data)
+    res_df.to_csv(f'{dataset}_backward_times.csv')
