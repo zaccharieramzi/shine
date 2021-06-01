@@ -63,6 +63,8 @@ curves = {
 #CIFAR
 if df_cifar_perf is not None:
     ax_cifar = fig.add_subplot(g[0, 0])
+    if 'fpn' not in df_cifar_perf.columns:
+        df_cifar_perf['fpn'] = False
     for method_name, method_color in color_scheme.items():
         if 'shine' in method_name:
             query = 'shine'
@@ -99,6 +101,8 @@ if df_cifar_perf is not None:
 #Imagenet
 if df_imagenet_perf is not None:
     ax_imagenet = fig.add_subplot(g[1, 0])
+    if 'fpn' not in df_imagenet_perf.columns:
+        df_cifar_perf['fpn'] = False
     for method_name, method_color in color_scheme.items():
         if 'shine' in method_name:
             query = 'shine'
@@ -106,12 +110,12 @@ if df_imagenet_perf is not None:
             query = 'fpn'
         else:
             query = '~fpn & ~shine'
-        n_refines = df_cifar_perf.query(query)['n_refine'].unique()
+        n_refines = df_imagenet_perf.query(query)['n_refine'].unique()
         for n_refine in n_refines:
             query_refine = query + f'& n_refine=="{n_refine}"'
-            x = df_cifar_times.query(query_refine)['median_backward']
-            y = df_cifar_perf.query(query_refine)['top1'].mean()
-            e = df_cifar_perf.query(query_refine)['top1'].std()
+            x = df_imagenet_times.query(query_refine)['median_backward']
+            y = df_imagenet_perf.query(query_refine)['top1'].mean()
+            e = df_imagenet_perf.query(query_refine)['top1'].std()
             ep = ax_imagenet.errorbar(
                 x,
                 y,
