@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-plt.style.use(['science'])
+# plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
@@ -85,9 +85,11 @@ if df_cifar_perf is not None:
                 if n_refine > 0:
                     query_refine = query + '& n_refine==@n_refine & (refine or (~fpn and ~shine))'
                 else:
-                    query_refine = query + '& ~refine'
+                    query_refine = query + '& (~refine or n_refine==@n_refine)'
             x = df_cifar_times.query(query_refine)['median_backward']
             y = df_cifar_perf.query(query_refine)['top1'].mean()
+            if np.isnan(y):
+                import ipdb; ipdb.set_trace()
             e = df_cifar_perf.query(query_refine)['top1'].std()
             curves[method_name][0].append(x)
             curves[method_name][1].append(y)
@@ -135,7 +137,7 @@ if df_imagenet_perf is not None:
                 if n_refine > 0:
                     query_refine = query + '& n_refine==@n_refine & (refine or (~fpn and ~shine))'
                 else:
-                    query_refine = query + '& ~refine'
+                    query_refine = query + '& (~refine or n_refine==@n_refine)'
             x = df_imagenet_times.query(query_refine)['median_backward']
             y = df_imagenet_perf.query(query_refine)['top1'].mean()
             e = df_imagenet_perf.query(query_refine)['top1'].std()
