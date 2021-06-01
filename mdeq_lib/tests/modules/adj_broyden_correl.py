@@ -1,3 +1,4 @@
+import argparse
 import os
 import pickle
 import random
@@ -315,10 +316,24 @@ def save_results(
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Train CIFAR MDEQ models with different techniques.')
+    parser.add_argument('--dataset', '-d', default='cifar',
+                        help='The dataset to chose between cifar and imagenet.'
+                        'Defaults to cifar.')
+    parser.add_argument('--n_runs', '-n', default=100,
+                        help='Number of seeds to use for the figure. Defaults to 100.')
+    args = parser.parse_args()
     random_prescribed = False
     opa_freq = 5
-    dataset = 'cifar'
-    model_size = 'LARGE'
+    dataset = args.dataset
+    model_size = 'LARGE' if dataset == 'cifar' else 'SMALL'
+    save_results(
+        n_runs=int(args.n_runs),
+        dataset=dataset,
+        model_size=model_size,
+        random_prescribed=random_prescribed,
+    )
     res_name = f'adj_broyden_inv_results_merged_{dataset}_{model_size}'
     if not random_prescribed:
         res_name += '_true_grad'
