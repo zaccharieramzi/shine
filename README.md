@@ -36,3 +36,11 @@ You can also just do the CIFAR trainings, by simply not running the ImageNet one
 The Figure will still be generated.
 
 ## Reproducing Figure E.2., Quality of the inversion using OPA in DEQs
+
+You can reproduce Figure E.2. of the paper with the following script:
+
+```
+python mdeq_lib/tests/modules/adj_broyden_correl.py
+```
+
+This should take about 15 mins to run with a single GPU.
