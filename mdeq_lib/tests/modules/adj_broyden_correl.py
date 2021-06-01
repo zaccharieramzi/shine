@@ -282,7 +282,8 @@ def present_results(
         ncol=1,
         handlelength=1.5,
         handletextpad=.1,
-        title=r'\textbf{Method}',
+        # title=r'\textbf{Method}',
+        title='Method',
     )
     ax_legend.axis('off')
     fig_name = 'adj_broyden_inversion'
