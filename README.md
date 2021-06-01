@@ -32,4 +32,7 @@ Beware:
 For a practical reproduction you might want to run those in an HPC.
 For a test use, you can use the `--n_runs` and `--n_refines` options.
 
+You can also just do the CIFAR trainings, by simply not running the ImageNet ones.
+The Figure will still be generated.
+
 ## Reproducing Figure E.2., Quality of the inversion using OPA in DEQs
