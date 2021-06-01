@@ -65,8 +65,9 @@ if df_cifar_perf is not None:
     ax_cifar = fig.add_subplot(g[0, 0])
     if 'fpn' not in df_cifar_perf.columns:
         df_cifar_perf['fpn'] = False
+    if 'fpn' not in df_cifar_times.columns:
         df_cifar_times['fpn'] = False
-    for accel_kw in ['fpn', 'shine']:
+    for accel_kw in ['fpn', 'shine', 'refine']:
         df_cifar_perf[accel_kw].fillna(False, inplace=True)
         df_cifar_times[accel_kw].fillna(False, inplace=True)
     for method_name, method_color in color_scheme.items():
@@ -79,9 +80,12 @@ if df_cifar_perf is not None:
         n_refines = df_cifar_perf.query(query)['n_refine'].unique()
         for n_refine in n_refines:
             if np.isnan(n_refine):
-                query_refine = query + f'& n_refine != n_refine'
+                query_refine = query + '& n_refine != n_refine & (refine or (~fpn and ~shine)) '
             else:
-                query_refine = query + f'& n_refine=="{n_refine}"'
+                if n_refine > 0:
+                    query_refine = query + '& n_refine==@n_refine & (refine or (~fpn and ~shine))'
+                else:
+                    query_refine = query + '& ~refine'
             x = df_cifar_times.query(query_refine)['median_backward']
             y = df_cifar_perf.query(query_refine)['top1'].mean()
             e = df_cifar_perf.query(query_refine)['top1'].std()
@@ -100,6 +104,7 @@ if df_cifar_perf is not None:
 
     #curves sorting/plotting
     for k, (x, y) in curves.items():
+        x = np.array(x).flatten()
         idx = np.argsort(x)
         x_sorted, y_sorted = [x[i] for i in idx], [y[i] for i in idx]
         ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
@@ -110,8 +115,9 @@ if df_imagenet_perf is not None:
     ax_imagenet = fig.add_subplot(g[1, 0])
     if 'fpn' not in df_imagenet_perf.columns:
         df_imagenet_perf['fpn'] = False
+    if 'fpn' not in df_imagenet_times.columns:
         df_imagenet_times['fpn'] = False
-    for accel_kw in ['fpn', 'shine']:
+    for accel_kw in ['fpn', 'shine', 'refine']:
         df_imagenet_perf[accel_kw].fillna(False, inplace=True)
         df_imagenet_times[accel_kw].fillna(False, inplace=True)
     for method_name, method_color in color_scheme.items():
@@ -124,9 +130,12 @@ if df_imagenet_perf is not None:
         n_refines = df_imagenet_perf.query(query)['n_refine'].unique()
         for n_refine in n_refines:
             if np.isnan(n_refine):
-                query_refine = query + f'& n_refine != n_refine'
+                query_refine = query + '& n_refine != n_refine & (refine or (~fpn and ~shine))'
             else:
-                query_refine = query + f'& n_refine=="{n_refine}"'
+                if n_refine > 0:
+                    query_refine = query + '& n_refine==@n_refine & (refine or (~fpn and ~shine))'
+                else:
+                    query_refine = query + '& ~refine'
             x = df_imagenet_times.query(query_refine)['median_backward']
             y = df_imagenet_perf.query(query_refine)['top1'].mean()
             e = df_imagenet_perf.query(query_refine)['top1'].std()
