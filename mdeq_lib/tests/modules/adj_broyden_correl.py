@@ -328,12 +328,14 @@ if __name__ == '__main__':
     opa_freq = 5
     dataset = args.dataset
     model_size = 'LARGE' if dataset == 'cifar' else 'SMALL'
-    save_results(
-        n_runs=int(args.n_runs),
-        dataset=dataset,
-        model_size=model_size,
-        random_prescribed=random_prescribed,
-    )
+    recompute_res = True
+    if recompute_res:
+        save_results(
+            n_runs=int(args.n_runs),
+            dataset=dataset,
+            model_size=model_size,
+            random_prescribed=random_prescribed,
+        )
     res_name = f'adj_broyden_inv_results_merged_{dataset}_{model_size}'
     if not random_prescribed:
         res_name += '_true_grad'
