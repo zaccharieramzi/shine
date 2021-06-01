@@ -6,6 +6,7 @@ plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
+# XXX: import results from a csv
 results_cifar = {
     None: {
         'original': {'perf': (93.512, 0.15210626), 'time': (14.5, 0), 'backward-time': (209)},
