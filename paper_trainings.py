@@ -17,6 +17,9 @@ if __name__ == '__main__':
         description='Train CIFAR MDEQ models with different techniques.')
     parser.add_argument('--n_gpus', '-g', default=4,
                         help='The number of GPUs to use.')
+    parser.add_argument('--dataset', '-d', default='cifar',
+                        help='The dataset to chose between cifar and imagenet.'
+                        'Defaults to cifar.')
     parser.add_argument('--n_runs', '-n', default=5,
                         help='Number of seeds to use for the figure. Defaults to 5.')
     parser.add_argument('--refines', '-r', default='0,1,2,5,7,10,None',
@@ -25,11 +28,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     n_runs = int(args.n_runs)
     n_gpus = int(args.n_gpus)
-    n_epochs = 220
+    dataset = args.dataset
+    n_epochs = 220 if dataset == 'cifar' else 100
     n_refines = [parse_n_refine(n_refine.strip()) for n_refine in args.refines.split(',')]
     base_params = dict(
-        model_size='LARGE',
-        dataset='cifar',
+        model_size='LARGE' if dataset == 'cifar' else 'SMALL',
+        dataset=dataset,
         n_gpus=n_gpus,
         n_epochs=n_epochs,
     )
@@ -42,10 +46,11 @@ if __name__ == '__main__':
                 parameters += [
                     dict(**base_params),
                 ]
-            parameters += [
-                dict(shine=True, refine=True, **base_params),
-                dict(fpn=True, refine=True, **base_params),
-            ]
+            if dataset == 'cifar' or n_refine is not None:
+                parameters += [
+                    dict(shine=True, refine=True, **base_params),
+                    dict(fpn=True, refine=True, **base_params),
+                ]
 
     res_data = []
     for params in parameters:
@@ -61,4 +66,4 @@ if __name__ == '__main__':
         )
 
     df_res = pd.DataFrame(res_data)
-    df_res.to_csv('cifar_mdeq_results.csv')
+    df_res.to_csv(f'{dataset}_mdeq_results.csv')
