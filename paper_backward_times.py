@@ -33,11 +33,11 @@ if __name__ == '__main__':
         compute_partial=True,
         compute_total=False,
         f_thres_range=range(18, 19) if dataset == 'cifar' else range(27,28),
-        n_samples=300,
+        n_samples=n_samples,
     )
     parameters = []
     for n_refine in n_refines:
-        refine_active = n_refine > 0 or n_refine is None
+        refine_active = n_refine is None or n_refine > 0
         if refine_active:
             base_params.update(n_refine=n_refine)
         if n_refine != 0:
