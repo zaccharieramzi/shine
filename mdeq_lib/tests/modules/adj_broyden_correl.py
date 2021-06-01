@@ -19,7 +19,7 @@ from mdeq_lib.training.cls_train import update_config_w_args, worker_init_fn, pa
 from mdeq_lib.utils.utils import create_logger
 
 
-plt.style.use(['science'])
+# plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
