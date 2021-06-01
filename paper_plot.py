@@ -24,7 +24,8 @@ fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
 g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
 labels = [
     'Original Method',
-    r'\textbf{SHINE (ours)}',
+    # r'\textbf{SHINE (ours)}',
+    'SHINE (ours)',
     'Jacobian-Free',
 ]
 color_scheme = {
@@ -154,7 +155,7 @@ if df_imagenet_perf is not None:
     ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
 
 # legend
-g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.005, bottom=0.05, top=0.15)
+g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=1., bottom=0.05, top=0.15)
 ax_legend = fig.add_subplot(g_legend[0, 0])
 ax_legend.axis('off')
 handles = [
@@ -175,7 +176,8 @@ for marker_name, marker_style in markers_style.items():
 # for title
 ph = [plt.plot([],marker="", ls="")[0]] # Canvas
 handles_markers = ph + handles_markers
-markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+# markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+markers_labels = ['# Backward iter.'] + markers_labels
 ax_legend.legend(
     handles_markers,
     markers_labels,
@@ -187,7 +189,7 @@ ax_legend.legend(
 )
 
 
-fig.supylabel(r'Top-1 accuracy (\%)')
+fig.supylabel('Top-1 accuracy (%)')
 
 
 fig.savefig('fig4.pdf', dpi=300);
