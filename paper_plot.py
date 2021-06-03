@@ -1,77 +1,37 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-plt.style.use(['science'])
+# plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
-results_cifar = {
-    None: {
-        'original': {'perf': (93.512, 0.15210626), 'time': (14.5, 0), 'backward-time': (209)},
-        'shine': {'perf': (93.506, 0.18445666), 'time': (11.5, 0), 'backward-time': (273)},
-        'fpn': {'perf': (93.516, 0.17001258), 'time': (11.5, 0), 'backward-time': (198)},
-    },
-    10: {
-        'original': {'perf': (93.47399, 0.12986298), 'time': (12.9, 0), 'backward-time': (142.8)},
-        'shine': {'perf': (93.467995, 0.15638326), 'time': (13, 0), 'backward-time': (157)},
-        'fpn': {'perf': (93.602005, 0.14147879), 'time': (12.7, 0), 'backward-time': (142.6)},
-    },
-    7: {
-        'original': {'perf': (93.467995, 0.14958589), 'time': (12.9, 0), 'backward-time': (108)},
-        'shine': {'perf': (93.498, 0.23172565), 'time': (13, 0), 'backward-time': (119)},
-        'fpn': {'perf': (93.495995, 0.27557778), 'time': (12.7, 0), 'backward-time': (109)},
-    },
-    5: {
-        'original': {'perf': (93.621994, 0.12890144), 'time': (12.9, 0), 'backward-time': (86.4)},
-        'shine': {'perf': (93.54399, 0.18575287), 'time': (13, 0), 'backward-time': (96.6)},
-        'fpn': {'perf': (93.476, 0.14759484), 'time': (12.7, 0), 'backward-time': (86.5)},
-    },
-    2: {
-        'original': {'perf': (93.409996, 0.15059815), 'time': (12.9, 0), 'backward-time': (53.7)},
-        'shine': {'perf': (93.404, 0.14193195), 'time': (13, 0), 'backward-time': (58.9)},
-        'fpn': {'perf': (93.478004, 0.24854626), 'time': (12.7, 0), 'backward-time': (53.3)},
-    },
-    1: {
-        'original': {'perf': (92.642, 0.09927742), 'time': (12.9, 0), 'backward-time': (41.54)},
-        'shine': {'perf': (93.376, 0.24063425), 'time': (13, 0), 'backward-time': (46.9)},
-        'fpn': {'perf': (93.343994, 0.18325926), 'time': (12.7, 0), 'backward-time': (41.58)},
-    },
-    0: {
-        'fpn': {'perf': (93.091995, 0.11338575), 'time': (12.7, 0), 'backward-time': (12.9)},
-        'shine': {'perf': (93.144, 0.1843464), 'time': (13, 0), 'backward-time': (16.0)},
-    },
-#     'TINY': {
-#         'original': {'perf': (84.692, 0.23549175), 'time': (1.75, 0)},
-#         'shine': {'perf': (84.14, 0.15671521), 'time': (1.25, 0)},
-#         'fpn': {'perf': (84.05601, 0.19520284), 'time': (1.25, 0)},
-#     }
-}
-
-results_imagenet = {
-    'SMALL': {
-        'original': {'perf': (75.53, 0.), 'time': (-1, 0), 'backward-time': (798)},
-        'shine-fallback': {'perf': (70.374, 0.), 'time': (-1, 0), 'backward-time': (35.3)},
-        'fpn': {'perf': (72.594, 0.), 'time': (-1, 0), 'backward-time': (13.5)},
-    },
-    'SMALL-refine': {
-        'original': {'perf': (72.638, 0.), 'time': (-1, 0), 'backward-time': (212)},
-        'shine': {'perf': (74.21, 0.), 'time': (-1, 0), 'backward-time': (187)},
-        'fpn': {'perf': (74.518, 0.), 'time': (-1, 0), 'backward-time': (186)},
-    },
-}
+try:
+    df_cifar_perf = pd.read_csv('cifar_mdeq_results.csv')
+    df_cifar_times = pd.read_csv('cifar_backward_times.csv')
+except FileNotFoundError:
+    df_cifar_perf = None
+    df_cifar_times = None
+try:
+    df_imagenet_perf = pd.read_csv('imagenet_mdeq_results.csv')
+    df_imagenet_times = pd.read_csv('imagenet_backward_times.csv')
+except FileNotFoundError:
+    df_imagenet_perf = None
+    df_imagenet_times = None
 
 fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
 g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
 labels = [
     'Original Method',
-    r'\textbf{SHINE (ours)}',
+    # r'\textbf{SHINE (ours)}',
+    'SHINE (ours)',
     'Jacobian-Free',
 ]
 color_scheme = {
     'original': 'C0',
     'shine': 'C2',
-    'shine-fallback': 'C2',
+    # 'shine-fallback': 'C2',
     'fpn': 'C1',
 }
 naming_scheme = {
@@ -102,63 +62,100 @@ curves = {
     k: ([], []) for k in color_scheme.keys()
 }
 #CIFAR
-ax_cifar = fig.add_subplot(g[0, 0])
-for xp_name, xp_res in results_cifar.items():
-    if xp_name == 'TINY':
-        continue
-    for method_name, method_res in xp_res.items():
-        x = method_res['backward-time']
-        y = method_res['perf'][0]
-        e = method_res['perf'][1]
-        curves[method_name][0].append(x)
-        curves[method_name][1].append(y)
-        n_refine = xp_name if xp_name is not None else 20
-        ep = ax_cifar.errorbar(
-            x,
-            y,
-            ms=2.5,
-            yerr=e,
-            color=color_scheme[method_name],
-            fmt=markers_style[n_refine],
-            capsize=1,
-        )
+if df_cifar_perf is not None:
+    ax_cifar = fig.add_subplot(g[0, 0])
+    if 'fpn' not in df_cifar_perf.columns:
+        df_cifar_perf['fpn'] = False
+    if 'fpn' not in df_cifar_times.columns:
+        df_cifar_times['fpn'] = False
+    for accel_kw in ['fpn', 'shine', 'refine']:
+        df_cifar_perf[accel_kw].fillna(False, inplace=True)
+        df_cifar_times[accel_kw].fillna(False, inplace=True)
+    for method_name, method_color in color_scheme.items():
+        if 'shine' in method_name:
+            query = 'shine'
+        elif method_name == 'fpn':
+            query = 'fpn'
+        else:
+            query = '~fpn & ~shine'
+        n_refines = df_cifar_perf.query(query)['n_refine'].unique()
+        for n_refine in n_refines:
+            if np.isnan(n_refine):
+                query_refine = query + '& n_refine != n_refine & (refine or (~fpn and ~shine)) '
+            else:
+                if n_refine > 0:
+                    query_refine = query + '& n_refine==@n_refine & (refine or (~fpn and ~shine))'
+                else:
+                    query_refine = query + '& (~refine or n_refine==@n_refine)'
+            x = df_cifar_times.query(query_refine)['median_backward']
+            y = df_cifar_perf.query(query_refine)['top1'].mean()
+            if np.isnan(y):
+                import ipdb; ipdb.set_trace()
+            e = df_cifar_perf.query(query_refine)['top1'].std()
+            curves[method_name][0].append(x)
+            curves[method_name][1].append(y)
+            n_refine = n_refine if not np.isnan(n_refine) else 20
+            ep = ax_cifar.errorbar(
+                x,
+                y,
+                ms=2.5,
+                yerr=e,
+                color=color_scheme[method_name],
+                fmt=markers_style[n_refine],
+                capsize=1,
+            )
 
-#curves sorting/plotting
-for k, (x, y) in curves.items():
-    idx = np.argsort(x)
-    x_sorted, y_sorted = [x[i] for i in idx], [y[i] for i in idx]
-    ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
-ax_cifar.set_title('CIFAR10')
+    #curves sorting/plotting
+    for k, (x, y) in curves.items():
+        x = np.array(x).flatten()
+        idx = np.argsort(x)
+        x_sorted, y_sorted = [x[i] for i in idx], [y[i] for i in idx]
+        ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
+    ax_cifar.set_title('CIFAR10')
 
 #Imagenet
-ax_imagenet = fig.add_subplot(g[1, 0])
-for xp_name, xp_res in results_imagenet.items():
-    if xp_name == 'TINY':
-        continue
-    for method_name, method_res in xp_res.items():
-        x = method_res['backward-time']
-        y = method_res['perf'][0]
-        e = method_res['perf'][1]
-        if xp_name == 'SMALL-refine':
-            n_refine = 5
+if df_imagenet_perf is not None:
+    ax_imagenet = fig.add_subplot(g[1, 0])
+    if 'fpn' not in df_imagenet_perf.columns:
+        df_imagenet_perf['fpn'] = False
+    if 'fpn' not in df_imagenet_times.columns:
+        df_imagenet_times['fpn'] = False
+    for accel_kw in ['fpn', 'shine', 'refine']:
+        df_imagenet_perf[accel_kw].fillna(False, inplace=True)
+        df_imagenet_times[accel_kw].fillna(False, inplace=True)
+    for method_name, method_color in color_scheme.items():
+        if 'shine' in method_name:
+            query = 'shine'
+        elif method_name == 'fpn':
+            query = 'fpn'
         else:
-            if method_name == 'original':
-                n_refine = 27
+            query = '~fpn & ~shine'
+        n_refines = df_imagenet_perf.query(query)['n_refine'].unique()
+        for n_refine in n_refines:
+            if np.isnan(n_refine):
+                query_refine = query + '& n_refine != n_refine & (refine or (~fpn and ~shine))'
             else:
-                n_refine = 0
-        ep = ax_imagenet.errorbar(
-            x,
-            y,
-            ms=3,
-            yerr=e,
-            color=color_scheme[method_name],
-            fmt=markers_style[n_refine],
-        )
-ax_imagenet.set_title('ImageNet')
-ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
+                if n_refine > 0:
+                    query_refine = query + '& n_refine==@n_refine & (refine or (~fpn and ~shine))'
+                else:
+                    query_refine = query + '& (~refine or n_refine==@n_refine)'
+            x = df_imagenet_times.query(query_refine)['median_backward']
+            y = df_imagenet_perf.query(query_refine)['top1'].mean()
+            e = df_imagenet_perf.query(query_refine)['top1'].std()
+            n_refine = n_refine if not np.isnan(n_refine) else 27
+            ep = ax_imagenet.errorbar(
+                x,
+                y,
+                ms=3,
+                yerr=e,
+                color=color_scheme[method_name],
+                fmt=markers_style[n_refine],
+            )
+    ax_imagenet.set_title('ImageNet')
+    ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
 
 # legend
-g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.005, bottom=0.05, top=0.15)
+g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=1., bottom=0.05, top=0.15)
 ax_legend = fig.add_subplot(g_legend[0, 0])
 ax_legend.axis('off')
 handles = [
@@ -179,7 +176,8 @@ for marker_name, marker_style in markers_style.items():
 # for title
 ph = [plt.plot([],marker="", ls="")[0]] # Canvas
 handles_markers = ph + handles_markers
-markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+# markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+markers_labels = ['# Backward iter.'] + markers_labels
 ax_legend.legend(
     handles_markers,
     markers_labels,
@@ -191,7 +189,7 @@ ax_legend.legend(
 )
 
 
-fig.supylabel(r'Top-1 accuracy (\%)')
+fig.supylabel('Top-1 accuracy (%)')
 
 
-fig.savefig('merged_results_latency_style.pdf', dpi=300);
+fig.savefig('fig4.pdf', dpi=300);

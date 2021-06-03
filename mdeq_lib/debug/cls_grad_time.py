@@ -12,6 +12,7 @@ import pprint
 import random
 import shutil
 import sys
+import time
 
 import numpy as np
 import torch
@@ -53,9 +54,7 @@ Args = namedtuple(
 
 def worker_init_fn(worker_id, seed=0):
     """Helper to make random number generation independent in each process."""
-    worker_seed = 8*seed + worker_id
-    random.seed(worker_seed)
-    np.random.seed(worker_seed)
+    np.random.seed(8*seed + worker_id)
 
 def update_config_w_args(
     n_epochs=100,
@@ -106,17 +105,19 @@ def train_classifier(
     model_size='SMALL',
     shine=False,
     fpn=False,
-    gradient_correl=False,
-    gradient_ratio=False,
-    adjoint_broyden=False,
-    opa=False,
+    fallback=False,
     refine=False,
     n_refine=None,
-    fallback=False,
+    gradient_correl=False,
+    gradient_ratio=False,
     save_at=None,
     restart_from=None,
     use_group_norm=False,
     seed=0,
+    compute_partial=True,
+    compute_total=True,
+    f_thres_range=range(2, 200),
+    n_samples=1,
 ):
     random.seed(seed)
     np.random.seed(seed)
@@ -145,8 +146,6 @@ def train_classifier(
         fpn=fpn,
         seed=seed,
         use_group_norm=use_group_norm,
-        adjoint_broyden=adjoint_broyden,
-        opa=opa,
         refine=refine,
         n_refine=n_refine,
         fallback=fallback,
@@ -166,33 +165,24 @@ def train_classifier(
         fpn=fpn,
         gradient_correl=gradient_correl,
         gradient_ratio=gradient_ratio,
-        adjoint_broyden=adjoint_broyden,
         refine=refine,
         fallback=fallback,
-        opa=opa,
     ).cuda()
 
-    # dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
-    # logger.info(get_model_summary(model, dump_input))
+    dump_input = torch.rand(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE[1], config.MODEL.IMAGE_SIZE[0]).cuda()
+    logger.info(get_model_summary(model, dump_input))
 
     if config.TRAIN.MODEL_FILE:
         model.load_state_dict(torch.load(config.TRAIN.MODEL_FILE))
         logger.info(colored('=> loading model from {}'.format(config.TRAIN.MODEL_FILE), 'red'))
 
     # copy model file
-    this_dir = os.path.dirname(__file__)
     models_dst_dir = os.path.join(final_output_dir, 'models')
     if os.path.exists(models_dst_dir):
         shutil.rmtree(models_dst_dir)
 
-    writer_dict = {
-        'writer': SummaryWriter(log_dir=tb_log_dir),
-        'train_global_steps': 0,
-        'valid_global_steps': 0,
-    }
+    writer_dict = None
 
-    gpus = list(config.GPUS)
-    model = nn.DataParallel(model, device_ids=gpus).cuda()
     print("Finished constructing model!")
 
     # define loss function (criterion) and optimizer
@@ -214,7 +204,7 @@ def train_classifier(
             checkpoint = torch.load(model_state_file)
             last_epoch = checkpoint['epoch']
             best_perf = checkpoint['perf']
-            model.module.load_state_dict(checkpoint['state_dict'])
+            model.load_state_dict(checkpoint['state_dict'])
 
             # Update weight decay if needed
             checkpoint['optimizer']['param_groups'][0]['weight_decay'] = config.TRAIN.WD
@@ -240,14 +230,7 @@ def train_classifier(
             transforms.ToTensor(),
             normalize,
         ])
-        transform_valid = transforms.Compose([
-            transforms.Resize(int(config.MODEL.IMAGE_SIZE[0] / 0.875)),
-            transforms.CenterCrop(config.MODEL.IMAGE_SIZE[0]),
-            transforms.ToTensor(),
-            normalize,
-        ])
         train_dataset = datasets.ImageFolder(traindir, transform_train)
-        valid_dataset = datasets.ImageFolder(valdir, transform_valid)
     else:
         assert dataset_name == "cifar10", "Only CIFAR-10 is supported at this phase"
         classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')  # For reference
@@ -258,27 +241,14 @@ def train_classifier(
             transforms.ToTensor(),
             normalize,
         ])
-        transform_valid = transforms.Compose([
-            transforms.ToTensor(),
-            normalize,
-        ])
         train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
-        valid_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=False, download=True, transform=transform_valid)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
+        batch_size=32,
         shuffle=True,
-        num_workers=config.WORKERS,
-        pin_memory=True,
-        worker_init_fn=partial(worker_init_fn, seed=seed),
-    )
-    valid_loader = torch.utils.data.DataLoader(
-        valid_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU*len(gpus),
-        shuffle=False,
-        num_workers=config.WORKERS,
-        pin_memory=True,
+        num_workers=0,
+        pin_memory=False,
         worker_init_fn=partial(worker_init_fn, seed=seed),
     )
 
@@ -295,47 +265,66 @@ def train_classifier(
             lr_scheduler = torch.optim.lr_scheduler.StepLR(
                 optimizer, config.TRAIN.LR_STEP, config.TRAIN.LR_FACTOR,
                 last_epoch-1)
+    # train for one epoch
+    forward_accelerated_times = []
+    backward_accelerated_times = []
+    forward_original_times = []
+    backward_original_times = []
+    data_iter = iter(train_loader)
+    for i_data in range(n_samples):
+        input, target = next(data_iter)
+        model.train()
+        if compute_partial:
+            model.deq.shine = shine
+            model.deq.fpn = fpn
+            model.deq.gradient_ratio = gradient_ratio
+            model.deq.gradient_correl = gradient_correl
+            model.deq.refine = refine
+            model.deq.fallback = fallback
+            for f_thres in f_thres_range:
+                model.f_thres = f_thres
+                start_forward = time.time()
+                output = model(input.cuda(), train_step=-(i_data+1), writer=None)
+                end_forward = time.time()
+                forward_accelerated_times.append(end_forward - start_forward)
+                start_backward = time.time()
+                target = target.cuda(non_blocking=True)
 
-    # Training code
-    for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
-        topk = (1,5) if dataset_name == 'imagenet' else (1,)
-        if config.TRAIN.LR_SCHEDULER == 'step':
-            lr_scheduler.step()
+                loss = criterion(output, target)
 
-        # train for one epoch
-        train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
-              final_output_dir, tb_log_dir, writer_dict, topk=topk, opa=opa)
-        torch.cuda.empty_cache()
+                # compute gradient and do update step
+                optimizer.zero_grad()
+                loss.backward()
+                end_backward = time.time()
+                backward_accelerated_times.append(end_backward - start_backward)
 
-        # evaluate on validation set
-        perf_indicator = validate(config, valid_loader, model, criterion, lr_scheduler, epoch,
-                                  final_output_dir, tb_log_dir, writer_dict, topk=topk)
-        torch.cuda.empty_cache()
-        writer_dict['writer'].flush()
+        if compute_total:
+            # model.f_thres = 30
+            model.deq.shine = False
+            model.deq.fpn = False
+            model.deq.gradient_ratio = False
+            model.deq.gradient_correl = False
+            model.deq.refine = False
+            model.deq.fallback = False
+            for f_thres in f_thres_range:
+                model.f_thres = f_thres
+                start_forward = time.time()
+                output = model(input.cuda(), train_step=-(i_data+1), writer=None)
+                end_forward = time.time()
+                forward_original_times.append(end_forward - start_forward)
+                start_backward = time.time()
+                target = target.cuda(non_blocking=True)
 
-        if perf_indicator > best_perf:
-            best_perf = perf_indicator
-            best_model = True
-        else:
-            best_model = False
+                loss = criterion(output, target)
 
-        logger.info('=> saving checkpoint to {}'.format(final_output_dir))
-        checkpoint_files = ['checkpoint.pth.tar']
-        if save_at is not None and save_at == epoch:
-            checkpoint_files.append(f'checkpoint_{epoch}.pth.tar')
-        for checkpoint_file in checkpoint_files:
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'model': config.MODEL.NAME,
-                'state_dict': model.module.state_dict(),
-                'perf': perf_indicator,
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': lr_scheduler.state_dict(),
-            }, best_model, final_output_dir, filename=checkpoint_file)
-
-    final_model_state_file = os.path.join(final_output_dir,
-                                          'final_state.pth.tar')
-    logger.info('saving final model state to {}'.format(
-        final_model_state_file))
-    torch.save(model.module.state_dict(), final_model_state_file)
-    writer_dict['writer'].close()
+                # compute gradient and do update step
+                optimizer.zero_grad()
+                loss.backward()
+                end_backward = time.time()
+                backward_original_times.append(end_backward - start_backward)
+    method_name = Path(final_output_dir).name
+    torch.save(torch.tensor(forward_accelerated_times), f'{method_name}_forward_times.pt')
+    torch.save(torch.tensor(backward_accelerated_times), f'{method_name}_backward_times.pt')
+    torch.save(torch.tensor(forward_original_times), f'{model_size}_original_forward_times.pt')
+    torch.save(torch.tensor(backward_original_times), f'{model_size}_original_backward_times.pt')
+    return np.median(backward_accelerated_times)

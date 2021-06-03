@@ -1,3 +1,4 @@
+import argparse
 import os
 import pickle
 import random
@@ -18,7 +19,7 @@ from mdeq_lib.training.cls_train import update_config_w_args, worker_init_fn, pa
 from mdeq_lib.utils.utils import create_logger
 
 
-plt.style.use(['science'])
+# plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
@@ -252,32 +253,22 @@ def present_results(
     }
 
     styles = {
-        'shine': dict(color='C2', alpha=0.8),
+        'shine': dict(color='C2', alpha=0.5),
         'fpn': dict(color='C1'),
         'shine-opa': dict(color='chocolate'),
-        'shine-adj-br': dict(color='navajowhite', alpha=0.8),
+        'shine-adj-br': dict(color='navajowhite', alpha=0.65),
     }
     ax_scatter = axs[0]
     method_names = 'fpn shine shine-adj-br shine-opa'.split()
     for method_name in method_names:
         method_results = methods_results[method_name]
-        # ax_scatter.scatter(
-        #     method_results['ratio'],
-        #     method_results['correl'],
-        #     # label=f"{method_naming[method_name]} - {np.median(method_results['correl']):.4f}",
-        #     label=f"{method_naming[method_name]}",
-        #     s=3.,
-        #     **styles[method_name],
-        # )
-        sns.kdeplot(
-            x=method_results['ratio'],
-            y=method_results['correl'],
-            ax=ax_scatter,
+        ax_scatter.scatter(
+            method_results['ratio'],
+            method_results['correl'],
             label=f"{method_naming[method_name]}",
-            cut=2,
+            s=3.,
             **styles[method_name],
         )
-    # XXX: how can we include random inversion ?
     ax_scatter.set_ylabel(r'$\operatorname{cossim}(a, b)$')
     ax_scatter.set_xlabel(r'$\|a \|/\| b \|$')
     handles, labels = ax_scatter.get_legend_handles_labels()
@@ -291,8 +282,8 @@ def present_results(
         ncol=1,
         handlelength=1.5,
         handletextpad=.1,
-        # title=r'\textbf{Method} - median correlation',
-        title=r'\textbf{Method}',
+        # title=r'\textbf{Method}',
+        title='Method',
     )
     ax_legend.axis('off')
     fig_name = 'adj_broyden_inversion'
@@ -326,10 +317,26 @@ def save_results(
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Train CIFAR MDEQ models with different techniques.')
+    parser.add_argument('--dataset', '-d', default='cifar',
+                        help='The dataset to chose between cifar and imagenet.'
+                        'Defaults to cifar.')
+    parser.add_argument('--n_runs', '-n', default=100,
+                        help='Number of seeds to use for the figure. Defaults to 100.')
+    args = parser.parse_args()
     random_prescribed = False
     opa_freq = 5
-    dataset = 'cifar'
-    model_size = 'LARGE'
+    dataset = args.dataset
+    model_size = 'LARGE' if dataset == 'cifar' else 'SMALL'
+    recompute_res = True
+    if recompute_res:
+        save_results(
+            n_runs=int(args.n_runs),
+            dataset=dataset,
+            model_size=model_size,
+            random_prescribed=random_prescribed,
+        )
     res_name = f'adj_broyden_inv_results_merged_{dataset}_{model_size}'
     if not random_prescribed:
         res_name += '_true_grad'
