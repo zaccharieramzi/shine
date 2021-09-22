@@ -41,7 +41,7 @@ def add_vline(ax, x_pos, small_delta=False):
     """
     ax.axvline(x=x_pos, color='k', linestyle='--')
     if small_delta:
-        y_delta = 0.1
+        y_delta = 0.08
         x_delta = 3
     else:
         y_delta = 0.5
@@ -149,7 +149,7 @@ if df_cifar_perf is not None:
         ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
     ax_cifar.set_title('CIFAR10')
 
-add_vline(ax_cifar, 24, small_delta=True)
+add_vline(ax_cifar, 27, small_delta=True)
 
 #Imagenet
 if df_imagenet_perf is not None:
