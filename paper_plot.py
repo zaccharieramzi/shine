@@ -2,30 +2,41 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# plt.style.use(['science'])
+plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
+aggreg_cifar = aggreg_imagenet = False
 try:
     df_cifar_perf = pd.read_csv('cifar_mdeq_results.csv')
     df_cifar_times = pd.read_csv('cifar_backward_times.csv')
 except FileNotFoundError:
-    df_cifar_perf = None
-    df_cifar_times = None
+    try:
+        df_cifar_perf = pd.read_csv('cifar_aggreg_results.csv')
+        df_cifar_times = pd.read_csv('cifar_aggreg_results.csv')
+        aggreg_cifar = True
+    except FileNotFoundError:
+        df_cifar_perf = None
+        df_cifar_times = None
 try:
     df_imagenet_perf = pd.read_csv('imagenet_mdeq_results.csv')
     df_imagenet_times = pd.read_csv('imagenet_backward_times.csv')
 except FileNotFoundError:
-    df_imagenet_perf = None
-    df_imagenet_times = None
+    try:
+        df_imagenet_perf = pd.read_csv('imagenet_aggreg_results.csv')
+        df_imagenet_times = pd.read_csv('imagenet_aggreg_results.csv')
+        aggreg_imagenet = True
+    except FileNotFoundError:
+        df_imagenet_perf = None
+        df_imagenet_times = None
 
 fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
 g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
 labels = [
     'Original Method',
-    # r'\textbf{SHINE (ours)}',
-    'SHINE (ours)',
+    r'\textbf{SHINE (ours)}',
+    # 'SHINE (ours)',
     'Jacobian-Free',
 ]
 color_scheme = {
@@ -88,10 +99,14 @@ if df_cifar_perf is not None:
                 else:
                     query_refine = query + '& (~refine or n_refine==@n_refine)'
             x = df_cifar_times.query(query_refine)['median_backward']
-            y = df_cifar_perf.query(query_refine)['top1'].mean()
-            if np.isnan(y):
-                import ipdb; ipdb.set_trace()
-            e = df_cifar_perf.query(query_refine)['top1'].std()
+            if aggreg_cifar:
+                perf = df_cifar_perf.query(query_refine)
+                assert len(perf) == 1
+                y = perf['top1']
+                e = perf['std']
+            else:
+                y = df_cifar_perf.query(query_refine)['top1'].mean()
+                e = df_cifar_perf.query(query_refine)['top1'].std()
             curves[method_name][0].append(x)
             curves[method_name][1].append(y)
             n_refine = n_refine if not np.isnan(n_refine) else 20
@@ -140,8 +155,14 @@ if df_imagenet_perf is not None:
                 else:
                     query_refine = query + '& (~refine or n_refine==@n_refine)'
             x = df_imagenet_times.query(query_refine)['median_backward']
-            y = df_imagenet_perf.query(query_refine)['top1'].mean()
-            e = df_imagenet_perf.query(query_refine)['top1'].std()
+            if aggreg_imagenet:
+                perf = df_imagenet_perf.query(query_refine)
+                assert len(perf) == 1
+                y = perf['top1']
+                e = perf['std']
+            else:
+                y = df_imagenet_perf.query(query_refine)['top1'].mean()
+                e = df_imagenet_perf.query(query_refine)['top1'].std()
             n_refine = n_refine if not np.isnan(n_refine) else 27
             ep = ax_imagenet.errorbar(
                 x,
@@ -176,8 +197,8 @@ for marker_name, marker_style in markers_style.items():
 # for title
 ph = [plt.plot([],marker="", ls="")[0]] # Canvas
 handles_markers = ph + handles_markers
-# markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
-markers_labels = ['# Backward iter.'] + markers_labels
+markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+# markers_labels = ['# Backward iter.'] + markers_labels
 ax_legend.legend(
     handles_markers,
     markers_labels,
@@ -189,7 +210,7 @@ ax_legend.legend(
 )
 
 
-fig.supylabel('Top-1 accuracy (%)')
+fig.supylabel('Top-1 accuracy (\%)')
 
 
 fig.savefig('fig4.pdf', dpi=300);
