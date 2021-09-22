@@ -52,7 +52,8 @@ def add_vline(ax, x_pos, small_delta=False):
         fontsize=7)
 
 fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
-g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
+g_overall = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[0.9, 0.1])
+g = g_overall[0, 0].subgridspec(2, 1, height_ratios=[1., 1.], hspace=.4)
 labels = [
     'Original Method',
     r'\textbf{SHINE (ours)}',
@@ -200,14 +201,14 @@ if df_imagenet_perf is not None:
 add_vline(ax_imagenet, 75)
 
 # legend
-g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=1., bottom=0.05, top=0.15)
+g_legend = g_overall[0, 1].subgridspec(2, 1, height_ratios=[1., 1.], hspace=1.)
 ax_legend = fig.add_subplot(g_legend[0, 0])
 ax_legend.axis('off')
 handles = [
     plt.Rectangle([0, 0], 0.1, 0.1, color=f'C{i}')
     for i in [0, 2, 1]
 ]
-ax_legend.legend(handles, labels, loc='center', ncol=3, handlelength=1., handletextpad=.5)
+ax_legend.legend(handles, labels, loc='center', ncol=1, handlelength=1., handletextpad=.5)
 # legend markers
 ax_legend = fig.add_subplot(g_legend[1, 0])
 ax_legend.axis('off')
@@ -219,22 +220,27 @@ for marker_name, marker_style in markers_style.items():
     markers_labels.append(marker_name)
     pts.remove()
 # for title
-ph = [plt.plot([],marker="", ls="")[0]] # Canvas
-handles_markers = ph + handles_markers
-markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
-# markers_labels = ['# Backward iter.'] + markers_labels
+ax_legend.set_title(r'\textbf{\# Backward iter.}', fontsize=8)
 ax_legend.legend(
     handles_markers,
     markers_labels,
     loc='center',
-    ncol=len(markers_labels)+1,
+    ncol=2,
     handlelength=1.5,
     handletextpad=.1,
     columnspacing=1.,
 )
 
-
-fig.supylabel('Top-1 accuracy (\%)')
+# Y Label
+# fig.supylabel('Top-1 accuracy (\%)')
+ax_perf = fig.add_subplot(g[:], frameon=False)
+ax_perf.axes.xaxis.set_ticks([])
+ax_perf.axes.yaxis.set_ticks([])
+ax_perf.spines['top'].set_visible(False)
+ax_perf.spines['right'].set_visible(False)
+ax_perf.spines['bottom'].set_visible(False)
+ax_perf.spines['left'].set_visible(False)
+ax_perf.set_ylabel('Top-1 accuracy (\%)', labelpad=24.)
 
 
 fig.savefig('fig4.pdf', dpi=300);
