@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# plt.style.use(['science'])
+plt.style.use(['science'])
 plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
@@ -35,8 +35,8 @@ fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
 g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
 labels = [
     'Original Method',
-    # r'\textbf{SHINE (ours)}',
-    'SHINE (ours)',
+    r'\textbf{SHINE (ours)}',
+    # 'SHINE (ours)',
     'Jacobian-Free',
 ]
 color_scheme = {
@@ -197,8 +197,8 @@ for marker_name, marker_style in markers_style.items():
 # for title
 ph = [plt.plot([],marker="", ls="")[0]] # Canvas
 handles_markers = ph + handles_markers
-# markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
-markers_labels = ['# Backward iter.'] + markers_labels
+markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
+# markers_labels = ['# Backward iter.'] + markers_labels
 ax_legend.legend(
     handles_markers,
     markers_labels,
@@ -210,7 +210,7 @@ ax_legend.legend(
 )
 
 
-fig.supylabel('Top-1 accuracy (%)')
+fig.supylabel('Top-1 accuracy (\%)')
 
 
 fig.savefig('fig4.pdf', dpi=300);
