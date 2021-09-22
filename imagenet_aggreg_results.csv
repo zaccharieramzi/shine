@@ -1,7 +1,7 @@
-,n_refine,top1,std,median_backward,shine,fpn
-0,,75.53,0.0,798.0,False,False
-1,,70.374,0.0,35.3,True,False
-2,,72.594,0.0,13.5,False,True
-3,5.0,72.638,0.0,212.0,False,False
-4,5.0,74.21,0.0,187.0,True,False
-5,5.0,74.518,0.0,186.0,False,True
+,n_refine,top1,std,median_backward,shine,fpn,refine
+0,,75.53,0.0,798.0,False,False,False
+1,,70.374,0.0,35.3,True,False,False
+2,,72.594,0.0,13.5,False,True,False
+3,5.0,72.638,0.0,212.0,False,False,True
+4,5.0,74.21,0.0,187.0,True,False,True
+5,5.0,74.518,0.0,186.0,False,True,True
