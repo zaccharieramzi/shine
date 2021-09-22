@@ -46,7 +46,7 @@ if __name__ == '__main__':
                 parameters += [
                     dict(**base_params),
                 ]
-            if dataset == 'cifar' or n_refine is not None:
+            if n_refine is not None:
                 parameters += [
                     dict(shine=True, refine=True, **base_params),
                     dict(fpn=True, refine=True, **base_params),
