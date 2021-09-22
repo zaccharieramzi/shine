@@ -195,7 +195,7 @@ if df_imagenet_perf is not None:
                 fmt=markers_style[n_refine],
             )
     ax_imagenet.set_title('ImageNet')
-    ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
+    ax_imagenet.set_xlabel('Median backward pass in ms (wall-clock time), on a single V100 GPU, Batch size = 32')
 
 add_vline(ax_imagenet, 75)
 
