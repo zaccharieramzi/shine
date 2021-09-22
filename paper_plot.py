@@ -31,6 +31,26 @@ except FileNotFoundError:
         df_imagenet_perf = None
         df_imagenet_times = None
 
+
+# Vertical line to separate vanilla and refine models
+def add_vline(ax, x_pos, small_delta=False):
+    """
+    Adds a dashed vertical line in the graph specified by at x_pos.
+    Also adds a text on the upper left side of the dashed vertical line specifying 'Vanilla' 
+    and a text on the upper right side of the dashed vertical line specifying 'Refined'
+    """
+    ax.axvline(x=x_pos, color='k', linestyle='--')
+    if small_delta:
+        y_delta = 0.1
+        x_delta = 3
+    else:
+        y_delta = 0.5
+        x_delta = 10
+    ax.text(x_pos - x_delta, ax.get_ylim()[1] - y_delta, 'Vanilla', horizontalalignment='right', verticalalignment='top',
+        fontsize=7)
+    ax.text(x_pos + x_delta, ax.get_ylim()[1] - y_delta, 'Refined', horizontalalignment='left', verticalalignment='top',
+        fontsize=7)
+
 fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
 g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
 labels = [
@@ -128,6 +148,8 @@ if df_cifar_perf is not None:
         ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
     ax_cifar.set_title('CIFAR10')
 
+add_vline(ax_cifar, 24, small_delta=True)
+
 #Imagenet
 if df_imagenet_perf is not None:
     ax_imagenet = fig.add_subplot(g[1, 0])
@@ -174,6 +196,8 @@ if df_imagenet_perf is not None:
             )
     ax_imagenet.set_title('ImageNet')
     ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
+
+add_vline(ax_imagenet, 75)
 
 # legend
 g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=1., bottom=0.05, top=0.15)
