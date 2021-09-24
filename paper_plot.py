@@ -26,12 +26,13 @@ COLOR_SCHEME = {
 MARKERS_STYLE = {
     0: 'o',
     1: '^',
-    2: 's',
     5: 'p',
-    7: 'x',
-    10: 'D',
-    20: 'v',
     27: '*',
+    None: None,
+    2: 's',
+    10: 'D',
+    # 7: 'x',
+    20: '*',
 }
 
 aggreg_cifar = aggreg_imagenet = False
@@ -126,6 +127,8 @@ if df_cifar_perf is not None:
             query = '~fpn & ~shine'
         n_refines = df_cifar_perf.query(query)['n_refine'].unique()
         for n_refine in n_refines:
+            if n_refine == 7:
+                continue
             if np.isnan(n_refine):
                 query_refine = query + '& n_refine != n_refine & (refine or (~fpn and ~shine)) '
             else:
@@ -216,7 +219,7 @@ add_vline(ax_imagenet, 75)
 
 # legend
 g_legend = g_overall[0, 1].subgridspec(
-    5, 1, height_ratios=[.5, 1., .1, 1., .5], hspace=1.
+    5, 1, height_ratios=[.1, 1., .2, 1., 1.2], hspace=1.
 )
 ax_legend = fig.add_subplot(g_legend[1, 0])
 ax_legend.axis('off')
@@ -235,9 +238,16 @@ ax_legend.axis('off')
 handles_markers = []
 markers_labels = []
 for marker_name, marker_style in MARKERS_STYLE.items():
-    pts = plt.scatter([0], [0], marker=marker_style, c='black', label=marker_name)
+    if marker_name == 20:
+        continue
+    pts = plt.scatter(
+        [0], [0], marker=marker_style, c='black', label=marker_name,
+        alpha=1 if marker_style is not None else 0
+    )
     handles_markers.append(pts)
-    markers_labels.append(marker_name)
+    markers_labels.append(
+        marker_name if marker_name not in [0, 27] else
+        '0 - Vanilla' if marker_name == 0 else 'Full backward')
     pts.remove()
 
 # Add legend
@@ -248,7 +258,7 @@ ax_legend.legend(
     ncol=2,
     handlelength=1.5,
     handletextpad=.1,
-    columnspacing=1.,
+    columnspacing=-4,
     title=r'\textbf{\# Backward iter.}'
 )
 
@@ -264,5 +274,5 @@ ax_perf.spines['left'].set_visible(False)
 ax_perf.set_ylabel('Top-1 accuracy (\%)', labelpad=24.)
 
 
-fig.savefig('fig4.pdf', dpi=300)
+fig.savefig('figures/merged_results_latency_style.pdf', dpi=300)
 plt.show()

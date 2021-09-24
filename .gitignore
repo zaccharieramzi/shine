@@ -14,3 +14,7 @@ output/
 PRIVATE_*
 *_deprecated.yaml
 *.egg-info/
+
+# Do not add images in the repo
+*.pdf
+*.png
