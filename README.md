@@ -1,8 +1,8 @@
 # MDEQ - SHINE
 
-This is the second part of the code for the paper "SHINE: SHaring the INverse Estimate from the forward pass for bi-level optimization and implicit models", submitted at the 2021 NeurIPS conference.
+This is the second part of the code for the paper "SHINE: SHaring the INverse Estimate from the forward pass for bi-level optimization and implicit models", submitted at the 2022 ICLR conference.
 The first part of the code to reproduce the Bi-level optimizations experiments is available [here](https://github.com/zaccharieramzi/hoag/tree/shine).
-This source code allows to reproduce the experiments on multiscale DEQs, i.e. Figure 4, and Figure E.2. in Appendix.
+This source code allows to reproduce the experiments on multiscale DEQs, i.e. Figure 3, and Figure E.2. in Appendix.
 This repo is based on the original [mdeq repo](https://github.com/locuslab/mdeq) by @jerrybai1995.
 
 ## General instructions
@@ -12,9 +12,9 @@ This code will only run on a computer equipped with a GPU.
 You can then install the requirements with: `pip install -r requirements.txt`.
 
 
-## Reproducing Figure 4, DEQ
+## Reproducing Figure 3, DEQ
 
-You can reproduce Figure 4 of the paper with the following sequence of scripts:
+You can reproduce Figure 3 of the paper with the following sequence of scripts:
 ```
 # cifar
 python paper_trainings.py
