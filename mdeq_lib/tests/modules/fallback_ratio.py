@@ -158,8 +158,6 @@ if __name__ == '__main__':
     parser.add_argument('--n_runs', '-n', default=100,
                         help='Number of seeds to use for the figure. Defaults to 100.')
     args = parser.parse_args()
-    random_prescribed = False
-    opa_freq = 5
     dataset = args.dataset
     model_size = 'LARGE' if dataset == 'cifar' else 'SMALL'
     n_fallbacks = fallback_ratio(n_runs=args.n_runs, dataset=args.dataset, model_size=model_size)
