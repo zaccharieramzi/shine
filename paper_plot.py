@@ -7,6 +7,34 @@ plt.rcParams['font.size'] = 8
 plt.rcParams['xtick.labelsize'] = 6
 plt.rcParams['ytick.labelsize'] = 6
 
+MARKER_SIZE = 4
+
+METHODS_ORDER = ['original', 'fpn', 'shine']
+LABELS = {
+    'original': 'Original Method',
+    # 'SHINE (ours)',
+    'fpn': 'Jacobian-Free',
+    'shine': r'\textbf{SHINE (ours)}',
+}
+COLOR_SCHEME = {
+    'original': 'C0',
+    'shine': 'C2',
+    # 'shine-fallback': 'C2',
+    'fpn': 'C1',
+}
+
+MARKERS_STYLE = {
+    0: 'o',
+    1: '^',
+    5: 'p',
+    27: '*',
+    None: None,
+    2: 's',
+    10: 'D',
+    # 7: 'x',
+    20: '*',
+}
+
 aggreg_cifar = aggreg_imagenet = False
 try:
     df_cifar_perf = pd.read_csv('cifar_mdeq_results.csv')
@@ -31,37 +59,45 @@ except FileNotFoundError:
         df_imagenet_perf = None
         df_imagenet_times = None
 
-fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
-g = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=.4, bottom=0.26, top=0.99)
-labels = [
-    'Original Method',
-    r'\textbf{SHINE (ours)}',
-    # 'SHINE (ours)',
-    'Jacobian-Free',
-]
-color_scheme = {
-    'original': 'C0',
-    'shine': 'C2',
-    # 'shine-fallback': 'C2',
-    'fpn': 'C1',
-}
-naming_scheme = {
-    'original': 'OM',
-    'fpn': 'JF',
-    'shine': 'SH',
-    'shine-fallback': 'SH',
-}
 
-markers_style = {
-    0: 'o',
-    1: '^',
-    2: 's',
-    5: 'p',
-    7: 'x',
-    10: 'D',
-    20: 'v',
-    27: '*',
-}
+# Vertical line to separate vanilla and refine models
+def add_vline(ax, x_pos, small_delta=False):
+    """
+    Adds a dashed vertical line in the graph specified by at x_pos.
+    Also adds a text on the upper left side of the dashed vertical line specifying 'Vanilla'
+    and a text on the upper right side of the dashed vertical line specifying 'Refined'
+    """
+    x_lim = ax.get_xlim()
+    y_lim = ax.get_ylim()
+    ax.axvline(x=x_pos, color='k', linestyle='--')
+    if small_delta:
+        y_delta = 0.08
+        x_delta = 3
+    else:
+        y_delta = 0.5
+        x_delta = 10
+    ax.text(
+        x_pos - x_delta, ax.get_ylim()[1] - y_delta, 'Vanilla',
+        horizontalalignment='right', verticalalignment='top',
+        fontsize=7
+    )
+    ax.text(
+        x_pos + x_delta, ax.get_ylim()[1] - y_delta, 'Refined',
+        horizontalalignment='left', verticalalignment='top',
+        fontsize=7
+    )
+
+    ax.fill_between(
+        [ax.get_xlim()[0], x_pos],
+        [y_lim[0]] * 2, [y_lim[1]] * 2,
+        color='k', alpha=0.2
+     )
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+
+fig = plt.figure(figsize=(5.5, 2.8), constrained_layout=False)
+g_overall = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[0.9, 0.1])
+g = g_overall[0, 0].subgridspec(2, 1, height_ratios=[1., 1.], hspace=.4)
 
 annotation_offset = {
    (None, 'original'): (-13, -3.8) ,
@@ -70,7 +106,7 @@ annotation_offset = {
 }
 
 curves = {
-    k: ([], []) for k in color_scheme.keys()
+    k: ([], []) for k in COLOR_SCHEME.keys()
 }
 #CIFAR
 if df_cifar_perf is not None:
@@ -82,7 +118,7 @@ if df_cifar_perf is not None:
     for accel_kw in ['fpn', 'shine', 'refine']:
         df_cifar_perf[accel_kw].fillna(False, inplace=True)
         df_cifar_times[accel_kw].fillna(False, inplace=True)
-    for method_name, method_color in color_scheme.items():
+    for method_name, method_color in COLOR_SCHEME.items():
         if 'shine' in method_name:
             query = 'shine'
         elif method_name == 'fpn':
@@ -91,6 +127,8 @@ if df_cifar_perf is not None:
             query = '~fpn & ~shine'
         n_refines = df_cifar_perf.query(query)['n_refine'].unique()
         for n_refine in n_refines:
+            if n_refine == 7:
+                continue
             if np.isnan(n_refine):
                 query_refine = query + '& n_refine != n_refine & (refine or (~fpn and ~shine)) '
             else:
@@ -113,10 +151,10 @@ if df_cifar_perf is not None:
             ep = ax_cifar.errorbar(
                 x,
                 y,
-                ms=2.5,
+                ms=MARKER_SIZE,
                 yerr=e,
-                color=color_scheme[method_name],
-                fmt=markers_style[n_refine],
+                color=COLOR_SCHEME[method_name],
+                fmt=MARKERS_STYLE[n_refine],
                 capsize=1,
             )
 
@@ -125,8 +163,10 @@ if df_cifar_perf is not None:
         x = np.array(x).flatten()
         idx = np.argsort(x)
         x_sorted, y_sorted = [x[i] for i in idx], [y[i] for i in idx]
-        ax_cifar.plot(x_sorted, y_sorted, color=color_scheme[k])
+        ax_cifar.plot(x_sorted, y_sorted, color=COLOR_SCHEME[k])
     ax_cifar.set_title('CIFAR10')
+
+add_vline(ax_cifar, 27, small_delta=True)
 
 #Imagenet
 if df_imagenet_perf is not None:
@@ -138,7 +178,7 @@ if df_imagenet_perf is not None:
     for accel_kw in ['fpn', 'shine', 'refine']:
         df_imagenet_perf[accel_kw].fillna(False, inplace=True)
         df_imagenet_times[accel_kw].fillna(False, inplace=True)
-    for method_name, method_color in color_scheme.items():
+    for method_name, method_color in COLOR_SCHEME.items():
         if 'shine' in method_name:
             query = 'shine'
         elif method_name == 'fpn':
@@ -167,50 +207,72 @@ if df_imagenet_perf is not None:
             ep = ax_imagenet.errorbar(
                 x,
                 y,
-                ms=3,
+                ms=MARKER_SIZE,
                 yerr=e,
-                color=color_scheme[method_name],
-                fmt=markers_style[n_refine],
+                color=COLOR_SCHEME[method_name],
+                fmt=MARKERS_STYLE[n_refine],
             )
     ax_imagenet.set_title('ImageNet')
-    ax_imagenet.set_xlabel('Median backward pass in ms, on a single V100 GPU, Batch size = 32')
+    ax_imagenet.set_xlabel('Backward pass wall-clock time [ms]')
+
+add_vline(ax_imagenet, 75)
 
 # legend
-g_legend = fig.add_gridspec(2, 1, height_ratios=[1., 1.], hspace=1., bottom=0.05, top=0.15)
-ax_legend = fig.add_subplot(g_legend[0, 0])
-ax_legend.axis('off')
-handles = [
-    plt.Rectangle([0, 0], 0.1, 0.1, color=f'C{i}')
-    for i in [0, 2, 1]
-]
-ax_legend.legend(handles, labels, loc='center', ncol=3, handlelength=1., handletextpad=.5)
-# legend markers
+g_legend = g_overall[0, 1].subgridspec(
+    5, 1, height_ratios=[.1, 1., .2, 1., 1.2], hspace=1.
+)
 ax_legend = fig.add_subplot(g_legend[1, 0])
+ax_legend.axis('off')
+method_handles = [
+    plt.Rectangle([0, 0], 0.1, 0.1, color=COLOR_SCHEME[l])
+    for l in METHODS_ORDER
+]
+method_labels = [LABELS[l] for l in METHODS_ORDER]
+ax_legend.legend(
+    method_handles, method_labels, loc='center', ncol=1,
+    handlelength=1., handletextpad=.5, title=r'\textbf{Methods}'
+)
+# legend markers
+ax_legend = fig.add_subplot(g_legend[3, 0])
 ax_legend.axis('off')
 handles_markers = []
 markers_labels = []
-for marker_name, marker_style in markers_style.items():
-    pts = plt.scatter([0], [0], marker=marker_style, c='black', label=marker_name)
+for marker_name, marker_style in MARKERS_STYLE.items():
+    if marker_name == 20:
+        continue
+    pts = plt.scatter(
+        [0], [0], marker=marker_style, c='black', label=marker_name,
+        alpha=1 if marker_style is not None else 0
+    )
     handles_markers.append(pts)
-    markers_labels.append(marker_name)
+    markers_labels.append(
+        marker_name if marker_name not in [0, 27] else
+        '0 - Vanilla' if marker_name == 0 else 'Full backward')
     pts.remove()
-# for title
-ph = [plt.plot([],marker="", ls="")[0]] # Canvas
-handles_markers = ph + handles_markers
-markers_labels = [r'\textbf{\# Backward iter.}'] + markers_labels
-# markers_labels = ['# Backward iter.'] + markers_labels
+
+# Add legend
 ax_legend.legend(
     handles_markers,
     markers_labels,
     loc='center',
-    ncol=len(markers_labels)+1,
+    ncol=2,
     handlelength=1.5,
     handletextpad=.1,
-    columnspacing=1.,
+    columnspacing=-4,
+    title=r'\textbf{\# Backward iter.}'
 )
 
+# Y Label
+# fig.supylabel('Top-1 accuracy (\%)')
+ax_perf = fig.add_subplot(g[:], frameon=False)
+ax_perf.axes.xaxis.set_ticks([])
+ax_perf.axes.yaxis.set_ticks([])
+ax_perf.spines['top'].set_visible(False)
+ax_perf.spines['right'].set_visible(False)
+ax_perf.spines['bottom'].set_visible(False)
+ax_perf.spines['left'].set_visible(False)
+ax_perf.set_ylabel('Top-1 accuracy (\%)', labelpad=24.)
 
-fig.supylabel('Top-1 accuracy (\%)')
 
-
-fig.savefig('fig4.pdf', dpi=300);
+fig.savefig('figures/merged_results_latency_style.pdf', dpi=300)
+plt.show()
