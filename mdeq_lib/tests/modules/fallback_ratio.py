@@ -106,46 +106,47 @@ def fallback_ratio(n_runs=1, dataset='imagenet', model_size='SMALL'):
     for i_run in range(n_runs):
         input, target = next(iter_loader)
         target = target.cuda(non_blocking=True)
-        x_list, z_list = model.feature_extraction(input.cuda())
-        model.fullstage._reset(z_list)
-        model.fullstage_copy._copy(model.fullstage)
-        # fixed point solving
-        x_list = [x.clone().detach().requires_grad_() for x in x_list]
-        cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
-        args = (27, int(1e9), None)
-        nelem = sum([elem.nelement() for elem in z_list])
-        eps = 1e-5 * np.sqrt(nelem)
-        z1_est = DEQFunc2d.list2vec(z_list)
-        z1_est = torch.zeros_like(z1_est)
-        g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
-        model.copy_modules()
-        loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
-        def inverse_direction_fun(x):
-            x_temp = x.clone().detach().requires_grad_()
-            with torch.enable_grad():
-                x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
-                loss = loss_function(x_list)
-            loss.backward()
-            dl_dx = x_temp.grad
-            return dl_dx
+        with torch.no_grad():
+            x_list, z_list = model.feature_extraction(input.cuda())
+            model.fullstage._reset(z_list)
+            model.fullstage_copy._copy(model.fullstage)
+            # fixed point solving
+            x_list = [x.clone().detach().requires_grad_() for x in x_list]
+            cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
+            args = (27, int(1e9), None)
+            nelem = sum([elem.nelement() for elem in z_list])
+            eps = 1e-5 * np.sqrt(nelem)
+            z1_est = DEQFunc2d.list2vec(z_list)
+            z1_est = torch.zeros_like(z1_est)
+            g = lambda x: DEQFunc2d.g(model.fullstage_copy, x, x_list, cutoffs, *args)
+            model.copy_modules()
+            loss_function = lambda y_est: model.get_fixed_point_loss(y_est, target)
+            def inverse_direction_fun(x):
+                x_temp = x.clone().detach().requires_grad_()
+                with torch.enable_grad():
+                    x_list = DEQFunc2d.vec2list(x_temp, cutoffs)
+                    loss = loss_function(x_list)
+                loss.backward()
+                dl_dx = x_temp.grad
+                return dl_dx
 
-        result_info = broyden(
-            g,
-            z1_est,
-            threshold=config.MODEL.F_THRES,
-            eps=eps,
-            name="forward",
-        )
-        z1_est = result_info['result']
-        Us = result_info['Us']
-        VTs = result_info['VTs']
-        nstep = result_info['lowest_step']
-        # compute true incoming gradient
-        grad = inverse_direction_fun(z1_est)
+            result_info = broyden(
+                g,
+                z1_est,
+                threshold=config.MODEL.F_THRES,
+                eps=eps,
+                name="forward",
+            )
+            z1_est = result_info['result']
+            Us = result_info['Us']
+            VTs = result_info['VTs']
+            nstep = result_info['lowest_step']
+            # compute true incoming gradient
+            grad = inverse_direction_fun(z1_est)
 
-        inv_dir =  - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
-        fallback_mask = inv_dir.view(32, -1).norm(dim=1) > 1.8 * grad.view(32, -1).norm(dim=1)
-        fallback_uses += fallback_mask.sum().item()
+            inv_dir =  - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
+            fallback_mask = inv_dir.view(32, -1).norm(dim=1) > 1.8 * grad.view(32, -1).norm(dim=1)
+            fallback_uses += fallback_mask.sum().item()
     return fallback_uses
 
 
