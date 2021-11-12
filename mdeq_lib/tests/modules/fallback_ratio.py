@@ -143,7 +143,7 @@ def fallback_ratio(n_runs=1, dataset='imagenet', model_size='SMALL'):
         # compute true incoming gradient
         grad = inverse_direction_fun(z1_est)
 
-        inv_dir =  - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad),
+        inv_dir =  - rmatvec(Us[:,:,:,:nstep-1], VTs[:,:nstep-1], grad)
         fallback_mask = inv_dir.view(32, -1).norm(dim=1) > 1.8 * grad.view(32, -1).norm(dim=1)
         fallback_uses += fallback_mask.sum().item()
     return fallback_uses
