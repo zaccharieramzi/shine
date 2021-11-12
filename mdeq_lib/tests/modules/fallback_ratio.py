@@ -24,7 +24,7 @@ def setup_model(opa=False, dataset='imagenet', model_size='SMALL'):
     use_group_norm = False
     shine = False
     fpn = False
-    adjoint_broyden = True
+    adjoint_broyden = False
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -74,7 +74,7 @@ def setup_model(opa=False, dataset='imagenet', model_size='SMALL'):
 
 def fallback_ratio(n_runs=1, dataset='imagenet', model_size='SMALL'):
     # setup
-    model = setup_model(opa_freq is not None, dataset, model_size)
+    model = setup_model(False, dataset, model_size)
     if dataset == 'imagenet':
         traindir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TRAIN_SET)
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
