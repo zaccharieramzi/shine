@@ -38,6 +38,7 @@ from mdeq_lib.config.env_config import (
     WORK_DIR,
 )
 from mdeq_lib.core.cls_function import train, validate
+from mdeq_lib.datasets.indexed_dataset import IndexedDataset
 from mdeq_lib.utils.modelsummary import get_model_summary
 from mdeq_lib.utils.utils import get_optimizer
 from mdeq_lib.utils.utils import save_checkpoint
@@ -117,6 +118,7 @@ def train_classifier(
     restart_from=None,
     use_group_norm=False,
     seed=0,
+    indexed_dataset=False,
 ):
     random.seed(seed)
     np.random.seed(seed)
@@ -265,6 +267,8 @@ def train_classifier(
         train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
         valid_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=False, download=True, transform=transform_valid)
 
+    if indexed_dataset:
+        train_dataset = IndexedDataset(train_dataset)
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
@@ -303,8 +307,11 @@ def train_classifier(
             lr_scheduler.step()
 
         # train for one epoch
-        train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
-              final_output_dir, tb_log_dir, writer_dict, topk=topk, opa=opa)
+        train(
+            config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
+            final_output_dir, tb_log_dir, writer_dict, topk=topk, opa=opa,
+            indexed_dataset=indexed_dataset,
+        )
         torch.cuda.empty_cache()
 
         # evaluate on validation set

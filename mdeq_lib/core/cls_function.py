@@ -15,8 +15,11 @@ from mdeq_lib.core.cls_evaluate import accuracy
 logger = logging.getLogger(__name__)
 
 
-def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
-          output_dir, tb_log_dir, writer_dict, topk=(1,5), opa=False):
+def train(
+    config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
+    output_dir, tb_log_dir, writer_dict, topk=(1,5), opa=False,
+    indexed_dataset=False,
+):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -30,7 +33,11 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
     end = time.time()
     total_batch_num = len(train_loader)
     effec_batch_num = int(config.PERCENT * total_batch_num)
-    for i, (input, target) in enumerate(train_loader):
+    for i, data in enumerate(train_loader):
+        if indexed_dataset:
+            input, target, index = data
+        else:
+            input, target = data
         # train on partial training data
         if i >= effec_batch_num:
             break
@@ -44,12 +51,16 @@ def train(config, train_loader, model, criterion, optimizer, lr_scheduler, epoch
             add_kwargs = {'y': target}
         else:
             add_kwargs = {}
+        if indexed_dataset:
+            add_kwargs['index'] = index
         output = model(
             input,
             train_step=(lr_scheduler._step_count-1),
             writer=writer_dict['writer'],
             **add_kwargs,
         )
+        if indexed_dataset:
+            output, y_list = output
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)

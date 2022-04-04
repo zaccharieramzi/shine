@@ -302,7 +302,7 @@ class MDEQClsNet(MDEQNet):
         loss = self.criterion(self.apply_classification_head_copy(y_est), true_y)
         return loss
 
-    def forward(self, x, train_step=0, **kwargs):
+    def forward(self, x, train_step=0, index=None, **kwargs):
         if self.opa:
             state = torch.get_rng_state()
             cuda_state = torch.cuda.get_rng_state(x.device)
@@ -314,7 +314,9 @@ class MDEQClsNet(MDEQNet):
             torch.cuda.set_rng_state(cuda_state, x.device)
         y_list = self._forward(x, train_step, **kwargs)
         y = self.apply_classification_head(y_list)
-        return y
+        if index is None:
+            return y
+        return y, y_list
 
     def init_weights(self, pretrained='',):
         """
