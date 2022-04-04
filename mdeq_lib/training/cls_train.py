@@ -269,6 +269,7 @@ def train_classifier(
 
     if indexed_dataset:
         train_dataset = IndexedDataset(train_dataset)
+        fixed_points = None
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
@@ -307,11 +308,15 @@ def train_classifier(
             lr_scheduler.step()
 
         # train for one epoch
-        train(
+        train_res = train(
             config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
             final_output_dir, tb_log_dir, writer_dict, topk=topk, opa=opa,
             indexed_dataset=indexed_dataset,
         )
+        if indexed_dataset:
+            if fixed_points is None:
+                fixed_points = np.empty((config.TRAIN.END_EPOCH, *train_res.shape))
+            fixed_points[epoch] = train_res
         torch.cuda.empty_cache()
 
         # evaluate on validation set
@@ -346,3 +351,5 @@ def train_classifier(
         final_model_state_file))
     torch.save(model.module.state_dict(), final_model_state_file)
     writer_dict['writer'].close()
+    if indexed_dataset:
+        return fixed_points
