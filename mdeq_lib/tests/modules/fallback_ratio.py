@@ -162,4 +162,4 @@ if __name__ == '__main__':
     dataset = args.dataset
     model_size = 'LARGE' if dataset == 'cifar' else 'SMALL'
     n_fallbacks = fallback_ratio(n_runs=int(args.n_runs), dataset=args.dataset, model_size=model_size)
-    print(f'Fallback was used {n_fallbacks} times, a ratio of {n_fallbacks/32}')
+    print(f'Fallback was used {n_fallbacks} times, a ratio of {n_fallbacks/(32*1000)}')
