@@ -7,9 +7,11 @@ from __future__ import print_function
 import time
 import logging
 
+import numpy as np
 import torch
 
 from mdeq_lib.core.cls_evaluate import accuracy
+from mdeq_lib.modules.deq2d import DEQFunc2d
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,8 @@ def train(
     end = time.time()
     total_batch_num = len(train_loader)
     effec_batch_num = int(config.PERCENT * total_batch_num)
+    if indexed_dataset:
+        fixed_points = None
     for i, data in enumerate(train_loader):
         if indexed_dataset:
             input, target, index = data
@@ -61,6 +65,13 @@ def train(
         )
         if indexed_dataset:
             output, y_list = output
+            y_vec = DEQFunc2d.list2vec(y_list)
+            if fixed_points is None:
+                # we need to flatten the fixed points
+                bsz, fixed_point_dim = y_vec.shape
+                fixed_points = np.empty((effec_batch_num*bsz, fixed_point_dim))
+            for i, y in zip(index, y_vec):
+                fixed_points[i] = y
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
@@ -105,6 +116,8 @@ def train(
                 writer.add_scalar('train_loss', losses.val, global_steps)
                 writer.add_scalar('train_top1', top1.val, global_steps)
                 writer_dict['train_global_steps'] = global_steps + 1
+    if indexed_dataset:
+        return fixed_points
 
 
 def validate(config, val_loader, model, criterion, lr_scheduler, epoch, output_dir, tb_log_dir,
