@@ -315,6 +315,8 @@ class MDEQClsNet(MDEQNet):
         y_list = self._forward(x, train_step, **kwargs)
         y = self.apply_classification_head(y_list)
         if index is None:
+            # TODO: this is not ok since there is dropout applied to y list
+            # we need to get the unmasked version
             return y
         return y, y_list
 
