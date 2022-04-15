@@ -46,6 +46,7 @@ class MDEQWrapper(DEQModule2d):
         writer = kwargs.get('writer', None)
         opa_freq = kwargs.get('opa_freq', 5)
         loss_function = kwargs.get('loss_function', None)
+        debug_info = kwargs.get('debug_info', False)
 
         if u is None:
             raise ValueError("Input injection is required.")
@@ -55,6 +56,7 @@ class MDEQWrapper(DEQModule2d):
             z1,
             u,
             self.adjoint_broyden if train_step > -1 else False,
+            debug_info,
             threshold,
             train_step,
             writer,

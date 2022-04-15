@@ -121,7 +121,7 @@ class DEQFunc2d(Function):
         return DEQFunc2d.vec2list(z1_est.clone().detach(), cutoffs), result_info
 
     @staticmethod
-    def forward(ctx, func, z1, u, adjoint, *args):
+    def forward(ctx, func, z1, u, adjoint, debug_info, *args):
         nelem = sum([elem.nelement() for elem in z1])
         eps = 1e-5 * np.sqrt(nelem)
         ctx.args_len = len(args) + 1
@@ -136,6 +136,8 @@ class DEQFunc2d(Function):
             qN_tensors = (Us, VTs, torch.tensor(nstep))
             # If one would like to analyze the convergence process (e.g., failures, stability), should
             # insert here or in broyden_find_root.
+            if debug_info:
+                pickle.dump(result_info, open(f"result_info_{debug_info}.pkl", "wb"))
             return tuple(z1_est) + qN_tensors
 
     @staticmethod

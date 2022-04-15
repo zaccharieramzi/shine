@@ -479,6 +479,7 @@ class MDEQNet(nn.Module):
         opa_freq = kwargs.get('opa_freq', self.opa_freq)
         loss_function = kwargs.get('loss_function', None)
         writer = kwargs.get('writer', None)     # For tensorboard
+        debug_info = kwargs.get('debug_info', False)     # For debugging
 
         x_list, z_list = self.feature_extraction(x)
 
@@ -503,6 +504,7 @@ class MDEQNet(nn.Module):
                 lim_mem=lim_mem,
                 opa_freq=opa_freq,
                 loss_function=loss_function,
+                debug_info=debug_info,
             )
 
         y_list = self.iodrop(z_list)
