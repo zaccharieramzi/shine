@@ -454,7 +454,7 @@ class MDEQNet(nn.Module):
 
         return MDEQModule(num_branches, block_type, num_blocks, num_channels, fuse_method, dropout=dropout)
 
-    def feature_extraction(self, x):
+    def feature_extraction(self, x, z_0=None):
         num_branches = self.num_branches
         x = self.downsample(x)
         dev = x.device
@@ -465,7 +465,7 @@ class MDEQNet(nn.Module):
             bsz, _, H, W = x_list[-1].shape
             x_list.append(torch.zeros(bsz, self.num_channels[i], H//2, W//2).to(dev))   # ... and the rest are all zeros
 
-        z_list = [torch.zeros_like(elem) for elem in x_list]
+        z_list = [torch.zeros_like(elem) for elem in x_list] if not z_0 else z_0
         return x_list, z_list
 
     def _forward(self, x, train_step=-1, **kwargs):
@@ -480,8 +480,9 @@ class MDEQNet(nn.Module):
         loss_function = kwargs.get('loss_function', None)
         writer = kwargs.get('writer', None)     # For tensorboard
         debug_info = kwargs.get('debug_info', False)     # For debugging
+        z_0 = kwargs.get('z_0', None)
 
-        x_list, z_list = self.feature_extraction(x)
+        x_list, z_list = self.feature_extraction(x, z_0)
 
         # For variational dropout mask resetting and weight normalization re-computations
         self.fullstage._reset(z_list)
