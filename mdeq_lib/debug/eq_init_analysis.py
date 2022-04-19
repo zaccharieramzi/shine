@@ -35,8 +35,10 @@ def analyze_equilibrium_initialization(
     )
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
     model_state_file = 'cls_mdeq_TINY_0/checkpoint.pth.tar'
-    checkpoint = torch.load(model_state_file, map_location=torch.device('cpu'))
-    model.load_state_dict(checkpoint['state_dict'])
+    if at_init:
+        checkpoint = torch.load(model_state_file, map_location=torch.device('cpu'))
+        model.load_state_dict(checkpoint['state_dict'])
+
     model.eval()
     normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     augment_list = [
