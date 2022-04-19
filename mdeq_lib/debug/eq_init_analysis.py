@@ -107,11 +107,16 @@ def analyze_equilibrium_initialization(
         pin_memory=True
     )
     optimizer = get_optimizer(config, model)
-    optimizer.load_state_dict(checkpoint['optimizer'])
+    if not at_init:
+        optimizer.load_state_dict(checkpoint['optimizer'])
+    last_epoch = 0
+    if not at_init:
+        last_epoch = checkpoint['lr_scheduler']['last_epoch']
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 1e5,
-                        last_epoch=checkpoint['lr_scheduler']['last_epoch'])
-    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-    last_epoch = checkpoint['epoch']
+                        last_epoch=last_epoch)
+    if not at_init:
+        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+        last_epoch = checkpoint['epoch']
     train(
         config,
         aug_train_loader,
