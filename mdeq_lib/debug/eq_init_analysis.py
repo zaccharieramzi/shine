@@ -155,6 +155,6 @@ def analyze_equilibrium_initialization(
             is_aug=True,
         )
     df_results.to_csv(
-        'eq_init_results_{dataset}_{model_size}_{n_samples_train}.csv',
+        f'eq_init_results_{dataset}_{model_size}_{n_samples_train}.csv',
     )
     return df_results
