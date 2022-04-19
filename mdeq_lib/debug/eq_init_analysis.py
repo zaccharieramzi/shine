@@ -29,12 +29,12 @@ def analyze_equilibrium_initialization(
         pretrained=False,
         n_gpus=0,
         dataset='cifar',
-        model_size='TINY',
+        model_size=model_size,
         use_group_norm=False,
         n_refine=None,
     )
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
-    model_state_file = 'cls_mdeq_TINY_0/checkpoint.pth.tar'
+    model_state_file = f'cls_mdeq_{model_size}_0/checkpoint.pth.tar'
     if not at_init:
         checkpoint = torch.load(model_state_file, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint['state_dict'])
