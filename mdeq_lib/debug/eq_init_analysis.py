@@ -125,6 +125,7 @@ def analyze_equilibrium_initialization(
     model.eval()
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
+        image = image.unsqueeze(0)
         _ = model(image, train_step=-1, index=image_index, debug_info='after_training')
         df_results = fill_df_results(
             df_results,
