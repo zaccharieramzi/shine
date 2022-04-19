@@ -79,10 +79,10 @@ def analyze_equilibrium_initialization(
     vanilla_inits = {}
     aug_inits = {}
     for image_index in image_indices:
-        image, y_true = train_dataset[image_index]
+        image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
         # pot in kwargs we can have: f_thres, b_thres, lim_mem
-        y_pred, y_list = model(image, train_step=-1, index=image_index, debug_info='before_training')
+        _, y_list = model(image, train_step=-1, index=image_index, debug_info='before_training')
         vanilla_inits[image_index] = y_list
         df_results = fill_df_results(
             df_results,
@@ -94,7 +94,7 @@ def analyze_equilibrium_initialization(
         )
         aug_image, _ = aug_train_dataset[image_index]
         aug_image = aug_image.unsqueeze(0)
-        aug_y_pred, aug_y_list = model(aug_image, train_step=-1, index=image_index)
+        _, aug_y_list = model(aug_image, train_step=-1, index=image_index)
         aug_inits[image_index] = aug_y_list
 
     aug_train_loader = torch.utils.data.DataLoader(
@@ -124,6 +124,7 @@ def analyze_equilibrium_initialization(
     )
     model.eval()
     for image_index in image_indices:
+        image, _ = train_dataset[image_index]
         _ = model(image, train_step=-1, index=image_index, debug_info='after_training')
         df_results = fill_df_results(
             df_results,
