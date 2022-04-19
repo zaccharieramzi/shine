@@ -1,6 +1,10 @@
 import os
 import pickle
 
+os.environ['CONFIG_DIR'] = 'experiments'
+os.environ['DATA_DIR'] = 'data'
+os.environ['CIFAR_DIR'] = 'data/cifar'
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,10 +19,6 @@ import mdeq_lib.models as models
 from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.utils import get_optimizer
 
-
-os.environ['CONFIG_DIR'] = 'experiments'
-os.environ['DATA_DIR'] = 'data'
-os.environ['CIFAR_DIR'] = 'data/cifar'
 
 
 def analyze_equilibrium_initialization(
