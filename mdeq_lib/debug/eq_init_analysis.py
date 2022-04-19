@@ -60,13 +60,16 @@ def analyze_equilibrium_initialization(
         'trace',
         'init_type',
         'is_aug',
+        'i_iter',
     ])
 
     def fill_df_results(df_results, pickle_file_name,  **data_kwargs):
         result_info = pickle.load(open(f'{pickle_file_name}.pkl', 'rb'))
         trace = result_info['trace']
+        i_iter = np.arange(len(trace))
         df_trace = pd.DataFrame(data={
             'trace' :trace,
+            'i_iter': i_iter,
             **data_kwargs,
         })
         df_results = df_results.append(df_trace, ignore_index=True)
@@ -121,7 +124,7 @@ def analyze_equilibrium_initialization(
     )
     model.eval()
     for image_index in image_indices:
-        new_y_pred, new_y_list = model(image, train_step=-1, index=image_index, debug_info='after_training')
+        _ = model(image, train_step=-1, index=image_index, debug_info='after_training')
         df_results = fill_df_results(
             df_results,
             'result_info_after_training',
@@ -141,7 +144,6 @@ def analyze_equilibrium_initialization(
         )
         new_aug_image, _ = aug_train_dataset[image_index]
         new_aug_image = new_aug_image.unsqueeze(0)
-        new_aug_y_pred, new_aug_y_list = model(new_aug_image, train_step=-1, index=image_index)
         _ = model(new_aug_image, train_step=-1, index=image_index, debug_info='after_training_init_aug_aug', z_0=aug_inits[image_index])
         df_results = fill_df_results(
             df_results,
