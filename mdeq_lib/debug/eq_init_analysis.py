@@ -100,7 +100,7 @@ def analyze_equilibrium_initialization(
         aug_inits[image_index] = aug_y_list
 
     aug_train_loader = torch.utils.data.DataLoader(
-        Subset(aug_train_dataset, list(range(1000))),
+        Subset(aug_train_dataset, list(range(n_samples_train))),
         batch_size=64,
         shuffle=True,
         num_workers=8,
