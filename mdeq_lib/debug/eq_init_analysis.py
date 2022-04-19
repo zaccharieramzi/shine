@@ -1,9 +1,4 @@
-import os
 import pickle
-
-os.environ['CONFIG_DIR'] = 'experiments'
-os.environ['DATA_DIR'] = 'data'
-os.environ['CIFAR_DIR'] = 'data/cifar'
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,7 +62,7 @@ def analyze_equilibrium_initialization(
         'is_aug',
     ])
 
-    def fill_df_results(pickle_file_name,  **data_kwargs):
+    def fill_df_results(df_results, pickle_file_name,  **data_kwargs):
         result_info = pickle.load(open(f'{pickle_file_name}.pkl', 'rb'))
         trace = result_info['trace']
         df_trace = pd.DataFrame(data={
@@ -75,6 +70,7 @@ def analyze_equilibrium_initialization(
             **data_kwargs,
         })
         df_results = df_results.append(df_trace, ignore_index=True)
+        return df_results
 
     image_indices = np.random.choice(len(train_dataset), n_images, replace=False)
     vanilla_inits = {}
@@ -85,7 +81,8 @@ def analyze_equilibrium_initialization(
         # pot in kwargs we can have: f_thres, b_thres, lim_mem
         y_pred, y_list = model(image, train_step=-1, index=image_index, debug_info='before_training')
         vanilla_inits[image_index] = y_list
-        fill_df_results(
+        df_results = fill_df_results(
+            df_results,
             'result_info_before_training',
             image_index=image_index,
             before_training=True,
@@ -125,7 +122,8 @@ def analyze_equilibrium_initialization(
     model.eval()
     for image_index in image_indices:
         new_y_pred, new_y_list = model(image, train_step=-1, index=image_index, debug_info='after_training')
-        fill_df_results(
+        df_results = fill_df_results(
+            df_results,
             'result_info_after_training',
             image_index=image_index,
             before_training=False,
@@ -133,7 +131,8 @@ def analyze_equilibrium_initialization(
             is_aug=False,
         )
         _ = model(image, train_step=-1, index=image_index, debug_info='after_training_init', z_0=vanilla_inits[image_index])
-        fill_df_results(
+        df_results = fill_df_results(
+            df_results,
             'result_info_after_training_init',
             image_index=image_index,
             before_training=False,
@@ -144,7 +143,8 @@ def analyze_equilibrium_initialization(
         new_aug_image = new_aug_image.unsqueeze(0)
         new_aug_y_pred, new_aug_y_list = model(new_aug_image, train_step=-1, index=image_index)
         _ = model(new_aug_image, train_step=-1, index=image_index, debug_info='after_training_init_aug_aug', z_0=aug_inits[image_index])
-        fill_df_results(
+        df_results = fill_df_results(
+            df_results,
             'result_info_after_training_init_aug_aug',
             image_index=image_index,
             before_training=False,
