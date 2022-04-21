@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import matplotlib.pyplot as plt
@@ -28,7 +29,7 @@ def analyze_equilibrium_initialization(
         n_epochs=100,
         pretrained=False,
         n_gpus=0,
-        dataset='cifar',
+        dataset=dataset,
         model_size=model_size,
         use_group_norm=False,
         n_refine=None,
@@ -40,21 +41,41 @@ def analyze_equilibrium_initialization(
         model.load_state_dict(checkpoint['state_dict'])
 
     model.eval()
-    normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    augment_list = [
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-    ]
-    transform_train = transforms.Compose(augment_list + [
-        transforms.ToTensor(),
-        normalize,
-    ])
-    transform_valid = transforms.Compose([
-        transforms.ToTensor(),
-        normalize,
-    ])
-    train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_valid)
-    aug_train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
+    if dataset == 'cifar':
+        normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        augment_list = [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+        ]
+        transform_train = transforms.Compose(augment_list + [
+            transforms.ToTensor(),
+            normalize,
+        ])
+        transform_valid = transforms.Compose([
+            transforms.ToTensor(),
+            normalize,
+        ])
+        train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_valid)
+        aug_train_dataset = datasets.CIFAR10(root=f'{config.DATASET.ROOT}', train=True, download=True, transform=transform_train)
+    else:
+        traindir = os.path.join(config.DATASET.ROOT+'/images', config.DATASET.TRAIN_SET)
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        augment_list = [
+            transforms.RandomResizedCrop(config.MODEL.IMAGE_SIZE[0]),
+            transforms.RandomHorizontalFlip(),
+        ]
+        transform_train = transforms.Compose(augment_list + [
+            transforms.ToTensor(),
+            normalize,
+        ])
+        transform_valid = transforms.Compose([
+            transforms.Resize(int(config.MODEL.IMAGE_SIZE[0] / 0.875)),
+            transforms.CenterCrop(config.MODEL.IMAGE_SIZE[0]),
+            transforms.ToTensor(),
+            normalize,
+        ])
+        train_dataset = datasets.ImageFolder(traindir, transform_valid)
+        aug_train_dataset = datasets.ImageFolder(traindir, transform_train)
 
     df_results = pd.DataFrame(columns=[
         'image_index',
