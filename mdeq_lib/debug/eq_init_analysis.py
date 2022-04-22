@@ -41,8 +41,8 @@ def analyze_equilibrium_initialization(
         checkpoint_name += f'_{checkpoint}'
     model_state_file = f'cls_mdeq_{model_size}_0/{checkpoint_name}.pth.tar'
     if not at_init:
-        checkpoint = torch.load(model_state_file, map_location=torch.device('cpu'))
-        model.load_state_dict(checkpoint['state_dict'])
+        ckpt = torch.load(model_state_file, map_location=torch.device('cpu'))
+        model.load_state_dict(ckpt['state_dict'])
 
     model.eval()
     if dataset == 'cifar':
@@ -133,15 +133,15 @@ def analyze_equilibrium_initialization(
     )
     optimizer = get_optimizer(config, model)
     if not at_init:
-        optimizer.load_state_dict(checkpoint['optimizer'])
+        optimizer.load_state_dict(ckpt['optimizer'])
     last_epoch = 0
     if not at_init:
-        last_epoch = checkpoint['lr_scheduler']['last_epoch']
+        last_epoch = ckpt['lr_scheduler']['last_epoch']
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 1e5,
                         last_epoch=last_epoch)
     if not at_init:
-        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-        last_epoch = checkpoint['epoch']
+        lr_scheduler.load_state_dict(ckpt['lr_scheduler'])
+        last_epoch = ckpt['epoch']
     train(
         config,
         aug_train_loader,
