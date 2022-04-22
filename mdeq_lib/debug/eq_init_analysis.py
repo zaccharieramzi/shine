@@ -23,6 +23,7 @@ def analyze_equilibrium_initialization(
     dataset='cifar',
     n_samples_train=1000,
     n_images=100,
+    checkpoint=None,
 ):
 
     args = update_config_w_args(
@@ -35,7 +36,10 @@ def analyze_equilibrium_initialization(
         n_refine=None,
     )
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
-    model_state_file = f'cls_mdeq_{model_size}_0/checkpoint.pth.tar'
+    checkpoint_name = 'checkpoint'
+    if checkpoint is not None:
+        checkpoint_name += f'_{checkpoint}'
+    model_state_file = f'cls_mdeq_{model_size}_0/{checkpoint_name}.pth.tar'
     if not at_init:
         checkpoint = torch.load(model_state_file, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint['state_dict'])
@@ -183,7 +187,10 @@ def analyze_equilibrium_initialization(
             init_type='aug',
             is_aug=True,
         )
+    results_name = f'eq_init_results_{dataset}_{model_size}_{n_samples_train}'
+    if checkpoint:
+        results_name += f'_ckpt{checkpoint}'
     df_results.to_csv(
-        f'eq_init_results_{dataset}_{model_size}_{n_samples_train}.csv',
+        f'{results_name}.csv',
     )
     return df_results
