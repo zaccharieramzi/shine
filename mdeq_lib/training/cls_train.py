@@ -302,6 +302,8 @@ def train_classifier(
                 last_epoch-1)
 
     # Training code
+    if isinstance(save_at, int):
+        save_at = [save_at]
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
         topk = (1,5) if dataset_name == 'imagenet' else (1,)
         if config.TRAIN.LR_SCHEDULER == 'step':
@@ -333,7 +335,7 @@ def train_classifier(
 
         logger.info('=> saving checkpoint to {}'.format(final_output_dir))
         checkpoint_files = ['checkpoint.pth.tar']
-        if save_at is not None and save_at == epoch:
+        if save_at is not None and epoch in save_at:
             checkpoint_files.append(f'checkpoint_{epoch}.pth.tar')
         for checkpoint_file in checkpoint_files:
             save_checkpoint({
