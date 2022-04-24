@@ -10,6 +10,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 from mdeq_lib.config import config
+from mdeq_lib.config.env_config import CHECKPOINTS_DIR
 from mdeq_lib.core.cls_function import train, validate
 import mdeq_lib.models as models
 from mdeq_lib.training.cls_train import update_config_w_args
@@ -24,9 +25,9 @@ def analyze_equilibrium_initialization(
     n_samples_train=1000,
     n_images=100,
     checkpoint=None,
+    on_cpu=False,
 ):
-
-    args = update_config_w_args(
+    _ = update_config_w_args(
         n_epochs=100,
         pretrained=False,
         n_gpus=0,
@@ -36,12 +37,18 @@ def analyze_equilibrium_initialization(
         n_refine=None,
     )
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
+    if not on_cpu:
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        model = model.cuda()
     checkpoint_name = 'checkpoint'
     if checkpoint is not None:
         checkpoint_name += f'_{checkpoint}'
-    model_state_file = f'cls_mdeq_{model_size}_0/{checkpoint_name}.pth.tar'
+    model_state_file = CHECKPOINTS_DIR / dataset / f'cls_mdeq_{model_size}_0/{checkpoint_name}.pth.tar'
     if not at_init:
-        ckpt = torch.load(model_state_file, map_location=torch.device('cpu'))
+        ckpt = torch.load(
+            model_state_file,
+            map_location=torch.device('cpu') if on_cpu else None,
+        )
         model.load_state_dict(ckpt['state_dict'])
 
     model.eval()
