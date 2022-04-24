@@ -53,6 +53,11 @@ _C.MODEL.SIGMA = 2
 _C.MODEL.EXTRA = CN(new_allowed=True)
 
 _C.LOSS = CN()
+_C.LOSS.JAC_LOSS_FREQ = 0.0
+_C.LOSS.JAC_LOSS_WEIGHT = 0.0
+_C.LOSS.JAC_INCREMENTAL = int(1e8)
+_C.LOSS.JAC_STOP_EPOCH = int(1e8)    # The epoch at which we stop applying Jacobian regularization loss
+_C.LOSS.PRETRAIN_JAC_LOSS_WEIGHT = 0.0
 _C.LOSS.USE_OHEM = False
 _C.LOSS.OHEMTHRES = 0.9
 _C.LOSS.OHEMKEEP = 100000
