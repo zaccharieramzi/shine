@@ -364,7 +364,7 @@ class MDEQSegNet(MDEQNet):
                                                   stride=1, padding=1 if extra.FINAL_CONV_KERNEL == 3 else 0))
 
     def forward(self, x, train_step=0, **kwargs):
-        y = self._forward(x, train_step, **kwargs)
+        y, jac_loss = self._forward(x, train_step, **kwargs)
 
         # Segmentation Head
         y0_h, y0_w = y[0].size(2), y[0].size(3)
@@ -376,7 +376,7 @@ class MDEQSegNet(MDEQNet):
         all_res = None
         # torch.cuda.empty_cache()
         y = self.last_layer(y)
-        return y
+        return y, jac_loss
 
     def init_weights(self, pretrained=''):
         """
