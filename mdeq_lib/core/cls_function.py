@@ -25,8 +25,10 @@ def train(
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
+    jac_losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
+    update_freq = config.LOSS.JAC_INCREMENTAL
 
 
     # switch to train mode
@@ -49,6 +51,19 @@ def train(
         # measure data loading time
         data_time.update(time.time() - end)
         #target = target - 1 # Specific for imagenet
+        deq_steps = global_steps - config.TRAIN.PRETRAIN_STEPS
+        if deq_steps < 0:
+            # We can also regularize output Jacobian when pretraining
+            factor = config.LOSS.PRETRAIN_JAC_LOSS_WEIGHT
+        elif epoch >= config.LOSS.JAC_STOP_EPOCH:
+            # If are above certain epoch, we may want to stop jacobian regularization training
+            # (e.g., when the original loss is 0.01 and jac loss is 0.05, the jacobian regularization
+            # will be dominating and hurt performance!)
+            factor = 0
+        else:
+            # Dynamically schedule the Jacobian reguarlization loss weight, if needed
+            factor = config.LOSS.JAC_LOSS_WEIGHT + 0.1 * (deq_steps // update_freq)
+        compute_jac_loss = (torch.rand([]).item() < config.LOSS.JAC_LOSS_FREQ) and (factor > 0)
 
         # compute output
         if opa:
@@ -57,10 +72,11 @@ def train(
             add_kwargs = {}
         if indexed_dataset:
             add_kwargs['index'] = index
-        output = model(
+        output, jac_loss = model(
             input,
             train_step=(lr_scheduler._step_count-1),
             writer=writer_dict['writer'] if writer_dict else None,
+            compute_jac_loss=compute_jac_loss,
             **add_kwargs,
         )
         if indexed_dataset:
@@ -75,10 +91,14 @@ def train(
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
+        jac_loss = jac_loss.mean()
 
         # compute gradient and do update step
         optimizer.zero_grad()
-        loss.backward()
+        if factor > 0:
+            (loss + factor*jac_loss).backward()
+        else:
+            loss.backward()
         if config['TRAIN']['CLIP'] > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), config['TRAIN']['CLIP'])
         optimizer.step()
@@ -87,6 +107,9 @@ def train(
 
         # measure accuracy and record loss
         losses.update(loss.item(), input.size(0))
+        if compute_jac_loss:
+            jac_losses.update(jac_loss.item(), input.size(0))
+
 
         prec1, prec5 = accuracy(output, target, topk=topk)
 
@@ -114,6 +137,7 @@ def train(
                 writer = writer_dict['writer']
                 global_steps = writer_dict['train_global_steps']
                 writer.add_scalar('train_loss', losses.val, global_steps)
+                writer.add_scalar('jac_loss', jac_losses.val, global_steps)
                 writer.add_scalar('train_top1', top1.val, global_steps)
                 writer_dict['train_global_steps'] = global_steps + 1
     if indexed_dataset:
