@@ -46,6 +46,8 @@ CUDNN:
   BENCHMARK: false
   DETERMINISTIC: true
   ENABLED: true
+LOSS:
+  JAC_LOSS_WEIGHT: 0.0
 DATASET:
   DATASET: 'cifar10'
   DATA_FORMAT: 'jpg'
