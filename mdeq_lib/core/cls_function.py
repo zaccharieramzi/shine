@@ -60,7 +60,7 @@ def train(
         output = model(
             input,
             train_step=(lr_scheduler._step_count-1),
-            writer=writer_dict['writer'],
+            writer=writer_dict['writer'] if writer_dict else None,
             **add_kwargs,
         )
         if indexed_dataset:
