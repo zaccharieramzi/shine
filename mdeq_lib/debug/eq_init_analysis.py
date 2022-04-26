@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
+from torch import nn
 from torch.utils.data import Subset
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -38,9 +39,13 @@ def analyze_equilibrium_initialization(
         n_refine=None,
     )
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
+    criterion = torch.nn.CrossEntropyLoss()
     if not on_cpu:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
         model = model.cuda()
+        gpus = list(config.GPUS)
+        model = nn.DataParallel(model, device_ids=gpus).cuda()
+        criterion = criterion.cuda()
     checkpoint_name = 'checkpoint'
     if checkpoint is not None:
         checkpoint_name += f'_{checkpoint}'
@@ -154,7 +159,7 @@ def analyze_equilibrium_initialization(
         config,
         aug_train_loader,
         model,
-        torch.nn.CrossEntropyLoss(),
+        ,
         optimizer,
         lr_scheduler,
         last_epoch,
