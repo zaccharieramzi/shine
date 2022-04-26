@@ -138,9 +138,9 @@ def analyze_equilibrium_initialization(
 
     aug_train_loader = torch.utils.data.DataLoader(
         Subset(aug_train_dataset, list(range(n_samples_train))),
-        batch_size=64,
+        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
         shuffle=True,
-        num_workers=8,
+        num_workers=config.WORKERS,
         pin_memory=True
     )
     optimizer = get_optimizer(config, model)
