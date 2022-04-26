@@ -133,7 +133,7 @@ def analyze_equilibrium_initialization(
         vanilla_inits[image_index] = y_list
         df_results = fill_df_results(
             df_results,
-            'result_info_before_training',
+            f'result_info_before_training_{debug_info_tag}',
             image_index=image_index,
             before_training=True,
             init_type=None,
@@ -185,7 +185,7 @@ def analyze_equilibrium_initialization(
         _ = fn(image, train_step=-1, index=image_index, debug_info=f'after_training_{debug_info_tag}')
         df_results = fill_df_results(
             df_results,
-            'result_info_after_training',
+            f'result_info_after_training_{debug_info_tag}',
             image_index=image_index,
             before_training=False,
             init_type=None,
@@ -194,7 +194,7 @@ def analyze_equilibrium_initialization(
         _ = fn(image, train_step=-1, index=image_index, debug_info=f'after_training_init_{debug_info_tag}', z_0=vanilla_inits[image_index])
         df_results = fill_df_results(
             df_results,
-            'result_info_after_training_init',
+            f'result_info_after_training_init_{debug_info_tag}',
             image_index=image_index,
             before_training=False,
             init_type='vanilla',
@@ -207,7 +207,7 @@ def analyze_equilibrium_initialization(
         _ = fn(new_aug_image, train_step=-1, index=image_index, debug_info=f'after_training_init_aug_aug_{debug_info_tag}', z_0=aug_inits[image_index])
         df_results = fill_df_results(
             df_results,
-            'result_info_after_training_init_aug_aug',
+            f'result_info_after_training_init_aug_aug_{debug_info_tag}',
             image_index=image_index,
             before_training=False,
             init_type='aug',
