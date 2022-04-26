@@ -37,6 +37,7 @@ def analyze_equilibrium_initialization(
         use_group_norm=False,
         n_refine=None,
     )
+    torch.multiprocessing.set_start_method('spawn')
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
     criterion = torch.nn.CrossEntropyLoss()
     if not on_cpu:
