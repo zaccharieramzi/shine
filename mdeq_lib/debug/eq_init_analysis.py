@@ -26,11 +26,12 @@ def analyze_equilibrium_initialization(
     n_images=100,
     checkpoint=None,
     on_cpu=False,
+    n_gpus=1,
 ):
     _ = update_config_w_args(
         n_epochs=100,
         pretrained=False,
-        n_gpus=0,
+        n_gpus=n_gpus,
         dataset=dataset,
         model_size=model_size,
         use_group_norm=False,
