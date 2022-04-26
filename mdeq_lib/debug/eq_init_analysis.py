@@ -139,7 +139,7 @@ def analyze_equilibrium_initialization(
         )
         aug_image, _ = aug_train_dataset[image_index]
         aug_image = aug_image.unsqueeze(0)
-        _, aug_y_list = model(aug_image, train_step=-1, index=image_index)
+        _, aug_y_list = fn(aug_image, train_step=-1, index=image_index)
         aug_inits[image_index] = aug_y_list
 
     aug_train_loader = torch.utils.data.DataLoader(
