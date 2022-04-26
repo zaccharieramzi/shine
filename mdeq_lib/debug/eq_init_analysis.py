@@ -28,7 +28,7 @@ def analyze_equilibrium_initialization(
     on_cpu=False,
     n_gpus=1,
 ):
-    cfg = update_config_w_args(
+    update_config_w_args(
         n_epochs=100,
         pretrained=False,
         n_gpus=n_gpus,
@@ -48,7 +48,7 @@ def analyze_equilibrium_initialization(
     checkpoint_name = 'checkpoint'
     if checkpoint is not None:
         checkpoint_name += f'_{checkpoint}'
-    model_state_file = CHECKPOINTS_DIR / cfg.DATASET.DATASET / f'cls_mdeq_{model_size}_0/{checkpoint_name}.pth.tar'
+    model_state_file = CHECKPOINTS_DIR / config.DATASET.DATASET / f'cls_mdeq_{model_size}_0/{checkpoint_name}.pth.tar'
     if not at_init:
         ckpt = torch.load(
             model_state_file,
