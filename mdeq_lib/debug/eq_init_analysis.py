@@ -139,6 +139,8 @@ def analyze_equilibrium_initialization(
         )
         aug_image, _ = aug_train_dataset[image_index]
         aug_image = aug_image.unsqueeze(0)
+        if not on_cpu:
+            aug_image = aug_image.cuda()
         _, aug_y_list = fn(aug_image, train_step=-1, index=image_index)
         aug_inits[image_index] = aug_y_list
 
@@ -198,6 +200,8 @@ def analyze_equilibrium_initialization(
         )
         new_aug_image, _ = aug_train_dataset[image_index]
         new_aug_image = new_aug_image.unsqueeze(0)
+        if not on_cpu:
+            new_aug_image = new_aug_image.cuda()
         _ = fn(new_aug_image, train_step=-1, index=image_index, debug_info='after_training_init_aug_aug', z_0=aug_inits[image_index])
         df_results = fill_df_results(
             df_results,
