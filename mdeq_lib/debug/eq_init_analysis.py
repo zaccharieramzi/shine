@@ -159,7 +159,7 @@ def analyze_equilibrium_initialization(
         config,
         aug_train_loader,
         model,
-        ,
+        criterion,
         optimizer,
         lr_scheduler,
         last_epoch,
