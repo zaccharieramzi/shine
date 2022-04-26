@@ -1,7 +1,6 @@
 import os
 import pickle
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -12,7 +11,7 @@ import torchvision.transforms as transforms
 
 from mdeq_lib.config import config
 from mdeq_lib.config.env_config import CHECKPOINTS_DIR
-from mdeq_lib.core.cls_function import train, validate
+from mdeq_lib.core.cls_function import train
 import mdeq_lib.models as models
 from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.utils import get_optimizer
