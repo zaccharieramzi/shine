@@ -120,11 +120,12 @@ def analyze_equilibrium_initialization(
     image_indices = np.random.choice(len(train_dataset), n_images, replace=False)
     vanilla_inits = {}
     aug_inits = {}
+    fn = model if on_cpu else model.module
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
         # pot in kwargs we can have: f_thres, b_thres, lim_mem
-        _, y_list = model(image, train_step=-1, index=image_index, debug_info='before_training')
+        _, y_list = fn(image, train_step=-1, index=image_index, debug_info='before_training')
         vanilla_inits[image_index] = y_list
         df_results = fill_df_results(
             df_results,
@@ -173,7 +174,7 @@ def analyze_equilibrium_initialization(
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
-        _ = model(image, train_step=-1, index=image_index, debug_info='after_training')
+        _ = fn(image, train_step=-1, index=image_index, debug_info='after_training')
         df_results = fill_df_results(
             df_results,
             'result_info_after_training',
@@ -182,7 +183,7 @@ def analyze_equilibrium_initialization(
             init_type=None,
             is_aug=False,
         )
-        _ = model(image, train_step=-1, index=image_index, debug_info='after_training_init', z_0=vanilla_inits[image_index])
+        _ = fn(image, train_step=-1, index=image_index, debug_info='after_training_init', z_0=vanilla_inits[image_index])
         df_results = fill_df_results(
             df_results,
             'result_info_after_training_init',
@@ -193,7 +194,7 @@ def analyze_equilibrium_initialization(
         )
         new_aug_image, _ = aug_train_dataset[image_index]
         new_aug_image = new_aug_image.unsqueeze(0)
-        _ = model(new_aug_image, train_step=-1, index=image_index, debug_info='after_training_init_aug_aug', z_0=aug_inits[image_index])
+        _ = fn(new_aug_image, train_step=-1, index=image_index, debug_info='after_training_init_aug_aug', z_0=aug_inits[image_index])
         df_results = fill_df_results(
             df_results,
             'result_info_after_training_init_aug_aug',
