@@ -54,7 +54,10 @@ def analyze_equilibrium_initialization(
             model_state_file,
             map_location=torch.device('cpu') if on_cpu else None,
         )
-        model.load_state_dict(ckpt['state_dict'])
+        if on_cpu:
+            model.load_state_dict(ckpt['state_dict'])
+        else:
+            model.module.load_state_dict(ckpt['state_dict'])
 
     model.eval()
     if dataset == 'cifar':
