@@ -124,6 +124,8 @@ def analyze_equilibrium_initialization(
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
+        if not on_cpu:
+            image = image.cuda()
         # pot in kwargs we can have: f_thres, b_thres, lim_mem
         _, y_list = fn(image, train_step=-1, index=image_index, debug_info='before_training')
         vanilla_inits[image_index] = y_list
@@ -174,6 +176,8 @@ def analyze_equilibrium_initialization(
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
+        if not on_cpu:
+            image = image.cuda()
         _ = fn(image, train_step=-1, index=image_index, debug_info='after_training')
         df_results = fill_df_results(
             df_results,
