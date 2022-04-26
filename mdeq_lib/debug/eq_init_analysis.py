@@ -122,13 +122,14 @@ def analyze_equilibrium_initialization(
     vanilla_inits = {}
     aug_inits = {}
     fn = model if on_cpu else model.module
+    debug_info_tag = f'{dataset}_{model_size}_{checkpoint}_{n_samples_train}'
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
         if not on_cpu:
             image = image.cuda()
         # pot in kwargs we can have: f_thres, b_thres, lim_mem
-        _, y_list = fn(image, train_step=-1, index=image_index, debug_info='before_training')
+        _, y_list = fn(image, train_step=-1, index=image_index, debug_info=f'before_training_{debug_info_tag}')
         vanilla_inits[image_index] = y_list
         df_results = fill_df_results(
             df_results,
@@ -181,7 +182,7 @@ def analyze_equilibrium_initialization(
         image = image.unsqueeze(0)
         if not on_cpu:
             image = image.cuda()
-        _ = fn(image, train_step=-1, index=image_index, debug_info='after_training')
+        _ = fn(image, train_step=-1, index=image_index, debug_info=f'after_training_{debug_info_tag}')
         df_results = fill_df_results(
             df_results,
             'result_info_after_training',
@@ -190,7 +191,7 @@ def analyze_equilibrium_initialization(
             init_type=None,
             is_aug=False,
         )
-        _ = fn(image, train_step=-1, index=image_index, debug_info='after_training_init', z_0=vanilla_inits[image_index])
+        _ = fn(image, train_step=-1, index=image_index, debug_info=f'after_training_init_{debug_info_tag}', z_0=vanilla_inits[image_index])
         df_results = fill_df_results(
             df_results,
             'result_info_after_training_init',
@@ -203,7 +204,7 @@ def analyze_equilibrium_initialization(
         new_aug_image = new_aug_image.unsqueeze(0)
         if not on_cpu:
             new_aug_image = new_aug_image.cuda()
-        _ = fn(new_aug_image, train_step=-1, index=image_index, debug_info='after_training_init_aug_aug', z_0=aug_inits[image_index])
+        _ = fn(new_aug_image, train_step=-1, index=image_index, debug_info=f'after_training_init_aug_aug_{debug_info_tag}', z_0=aug_inits[image_index])
         df_results = fill_df_results(
             df_results,
             'result_info_after_training_init_aug_aug',
