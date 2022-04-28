@@ -18,6 +18,7 @@ import torch.nn.functional as F
 
 from mdeq_lib.modules.optimizations import *
 from mdeq_lib.modules.deq2d import *
+from mdeq_lib.modules.jacobian import jac_loss_estimate
 from mdeq_lib.models.mdeq_forward_backward import MDEQWrapper
 
 BN_MOMENTUM = 0.1
@@ -468,7 +469,7 @@ class MDEQNet(nn.Module):
         z_list = [torch.zeros_like(elem) for elem in x_list] if not z_0 else z_0
         return x_list, z_list
 
-    def _forward(self, x, train_step=-1, **kwargs):
+    def _forward(self, x, train_step=-1, compute_jac_loss=True, **kwargs):
         """
         The core MDEQ module. In the starting phase, we can (optionally) enter a shallow stacked f_\theta training mode
         to warm up the weights (specified by the self.pretrain_steps; see below)
@@ -484,14 +485,24 @@ class MDEQNet(nn.Module):
 
         x_list, z_list = self.feature_extraction(x, z_0)
 
+        z1 = DEQFunc2d.list2vec(z_list)
+        cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
+        func = lambda z: DEQFunc2d.list2vec(self.fullstage(DEQFunc2d.vec2list(z, cutoffs), x_list))
+
         # For variational dropout mask resetting and weight normalization re-computations
         self.fullstage._reset(z_list)
         self.fullstage_copy._copy(self.fullstage)
 
+        jac_loss = torch.tensor(0.0).to(x)
+
         # Multiscale Deep Equilibrium!
         if 0 <= train_step < self.pretrain_steps:
             for layer_ind in range(self.num_layers):
-                z_list = self.fullstage(z_list, x_list)
+                z1 = func(z1)
+            if self.training and compute_jac_loss:
+                z2 = z1.clone().detach().requires_grad_()
+                new_z2 = func(z2)
+                jac_loss = jac_loss_estimate(new_z2, z2)
         else:
             if train_step == self.pretrain_steps:
                 torch.cuda.empty_cache()
@@ -507,9 +518,14 @@ class MDEQNet(nn.Module):
                 loss_function=loss_function,
                 debug_info=debug_info,
             )
+            if self.training:
+                z1 = DEQFunc2d.list2vec(z_list)
+                new_z1 = func(z1.requires_grad_())
+                if compute_jac_loss:
+                    jac_loss = jac_loss_estimate(new_z1, z1)
 
         y_list = self.iodrop(z_list)
-        return y_list
+        return y_list, jac_loss.view(1,-1)
 
     def power_iterations(self, x, n_iter=None, **kwargs):
         num_branches = self.num_branches
