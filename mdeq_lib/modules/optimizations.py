@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 
+from mdeq_lib.config.env_config import DROPOUT_EVAL
 
 class VariationalHidDropout2d(nn.Module):
     def __init__(self, dropout=0.0, spatial=True):
@@ -31,7 +32,7 @@ class VariationalHidDropout2d(nn.Module):
         return mask
 
     def forward(self, x):
-        if not self.training or self.dropout == 0:
+        if (not self.training or self.dropout == 0) and not DROPOUT_EVAL:
             return x
         assert self.mask is not None, "You need to reset mask before using VariationalHidDropout"
         return self.mask.expand_as(x) * x
