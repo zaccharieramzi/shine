@@ -13,10 +13,16 @@ from mdeq_lib.config import config
 from mdeq_lib.config.env_config import CHECKPOINTS_DIR
 from mdeq_lib.core.cls_function import train
 import mdeq_lib.models as models
+from mdeq_lib.modules.optimizations import VariationalHidDropout2d
 from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.utils import get_optimizer
 
 
+
+def set_dropout_modules_active(model):
+    for m in model.modules():
+        if isinstance(m, VariationalHidDropout2d):
+            m.train()
 
 def analyze_equilibrium_initialization(
     model_size='TINY',
@@ -62,6 +68,8 @@ def analyze_equilibrium_initialization(
             model.module.load_state_dict(ckpt['state_dict'])
 
     model.eval()
+    if dropout_eval:
+        set_dropout_modules_active(model)
     if dataset == 'cifar':
         normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         augment_list = [
@@ -178,6 +186,8 @@ def analyze_equilibrium_initialization(
         None,
     )
     model.eval()
+    if dropout_eval:
+        set_dropout_modules_active(model)
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
