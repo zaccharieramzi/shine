@@ -315,9 +315,8 @@ class MDEQClsNet(MDEQNet):
         y_list, jac_loss = self._forward(x, train_step, **kwargs)
         y = self.apply_classification_head(y_list)
         if index is None:
-            # TODO: this is not ok since there is dropout applied to y list
-            # we need to get the unmasked version
             return y, jac_loss
+        # it's ok to return this y_list since iodropout is actually set to 0
         return y, y_list, jac_loss
 
     def init_weights(self, pretrained='',):

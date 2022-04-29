@@ -524,7 +524,7 @@ class MDEQNet(nn.Module):
                 if compute_jac_loss:
                     jac_loss = jac_loss_estimate(new_z1, z1)
 
-        y_list = self.iodrop(z_list)
+        y_list = self.iodrop(z_list)  # this is a no-op
         return y_list, jac_loss.view(1,-1)
 
     def power_iterations(self, x, n_iter=None, **kwargs):
