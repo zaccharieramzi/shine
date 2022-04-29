@@ -129,7 +129,7 @@ def analyze_equilibrium_initialization(
         if not on_cpu:
             image = image.cuda()
         # pot in kwargs we can have: f_thres, b_thres, lim_mem
-        _, y_list = fn(image, train_step=-1, index=image_index, debug_info=f'before_training_{debug_info_tag}')
+        _, y_list, _ = fn(image, train_step=-1, index=image_index, debug_info=f'before_training_{debug_info_tag}')
         vanilla_inits[image_index] = y_list
         df_results = fill_df_results(
             df_results,
@@ -143,7 +143,7 @@ def analyze_equilibrium_initialization(
         aug_image = aug_image.unsqueeze(0)
         if not on_cpu:
             aug_image = aug_image.cuda()
-        _, aug_y_list = fn(aug_image, train_step=-1, index=image_index)
+        _, aug_y_list, _ = fn(aug_image, train_step=-1, index=image_index)
         aug_inits[image_index] = aug_y_list
 
     aug_train_loader = torch.utils.data.DataLoader(
