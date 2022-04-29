@@ -312,13 +312,13 @@ class MDEQClsNet(MDEQNet):
             kwargs['loss_function'] = loss_function
             torch.set_rng_state(state)
             torch.cuda.set_rng_state(cuda_state, x.device)
-        y_list = self._forward(x, train_step, **kwargs)
+        y_list, jac_loss = self._forward(x, train_step, **kwargs)
         y = self.apply_classification_head(y_list)
         if index is None:
             # TODO: this is not ok since there is dropout applied to y list
             # we need to get the unmasked version
-            return y
-        return y, y_list
+            return y, jac_loss
+        return y, y_list, jac_loss
 
     def init_weights(self, pretrained='',):
         """

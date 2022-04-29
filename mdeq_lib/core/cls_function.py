@@ -73,7 +73,7 @@ def train(
             add_kwargs = {}
         if indexed_dataset:
             add_kwargs['index'] = index
-        output, jac_loss = model(
+        outputs = model(
             input,
             train_step=(lr_scheduler._step_count-1),
             writer=writer_dict['writer'] if writer_dict else None,
@@ -81,7 +81,7 @@ def train(
             **add_kwargs,
         )
         if indexed_dataset:
-            output, y_list = output
+            output, y_list, jac_loss = outputs
             y_vec = DEQFunc2d.list2vec(y_list)
             if fixed_points is None:
                 # we need to flatten the fixed points
@@ -89,6 +89,8 @@ def train(
                 fixed_points = np.empty((effec_batch_num*bsz, fixed_point_dim))
             for i, y in zip(index, y_vec):
                 fixed_points[i] = y
+        else:
+            output, jac_loss = outputs
         target = target.cuda(non_blocking=True)
 
         loss = criterion(output, target)
