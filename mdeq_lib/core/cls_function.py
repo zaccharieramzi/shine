@@ -29,6 +29,7 @@ def train(
     top1 = AverageMeter()
     top5 = AverageMeter()
     update_freq = config.LOSS.JAC_INCREMENTAL
+    global_steps = writer_dict['train_global_steps'] if writer_dict is not None else 0
 
 
     # switch to train mode
@@ -120,6 +121,7 @@ def train(
         batch_time.update(time.time() - end)
         end = time.time()
 
+        global_steps += 1
         if i % config.PRINT_FREQ == 0:
             msg = 'Epoch: [{0}][{1}/{2}]\t' \
                   'Time {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
@@ -135,11 +137,11 @@ def train(
 
             if writer_dict:
                 writer = writer_dict['writer']
-                global_steps = writer_dict['train_global_steps']
                 writer.add_scalar('train_loss', losses.val, global_steps)
                 writer.add_scalar('jac_loss', jac_losses.val, global_steps)
                 writer.add_scalar('train_top1', top1.val, global_steps)
-                writer_dict['train_global_steps'] = global_steps + 1
+                writer_dict['train_global_steps'] = global_steps
+
     if indexed_dataset:
         return fixed_points
 
