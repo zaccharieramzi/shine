@@ -227,6 +227,8 @@ def analyze_equilibrium_initialization(
     results_name = f'eq_init_results_{dataset}_{model_size}_{n_samples_train}'
     if checkpoint:
         results_name += f'_ckpt{checkpoint}'
+    if dropout_eval:
+        results_name += '_dropout'
     df_results.to_csv(
         f'{results_name}.csv',
     )
