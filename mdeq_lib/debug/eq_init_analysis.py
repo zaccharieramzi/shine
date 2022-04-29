@@ -13,10 +13,16 @@ from mdeq_lib.config import config
 from mdeq_lib.config.env_config import CHECKPOINTS_DIR
 from mdeq_lib.core.cls_function import train
 import mdeq_lib.models as models
+from mdeq_lib.modules.optimizations import VariationalHidDropout2d
 from mdeq_lib.training.cls_train import update_config_w_args
 from mdeq_lib.utils.utils import get_optimizer
 
 
+
+def set_dropout_modules_active(model):
+    for m in model.modules():
+        if isinstance(m, VariationalHidDropout2d):
+            m.train()
 
 def analyze_equilibrium_initialization(
     model_size='TINY',
@@ -27,6 +33,7 @@ def analyze_equilibrium_initialization(
     checkpoint=None,
     on_cpu=False,
     n_gpus=1,
+    dropout_eval=False,
 ):
     update_config_w_args(
         n_epochs=100,
@@ -37,10 +44,10 @@ def analyze_equilibrium_initialization(
         use_group_norm=False,
         n_refine=None,
     )
-    torch.multiprocessing.set_start_method('spawn')
     model = models.mdeq.get_cls_net(config, shine=False, fpn=False, refine=False, fallback=False, adjoint_broyden=False)
     criterion = torch.nn.CrossEntropyLoss()
     if not on_cpu:
+        torch.multiprocessing.set_start_method('spawn')
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
         model = model.cuda()
         gpus = list(config.GPUS)
@@ -61,6 +68,8 @@ def analyze_equilibrium_initialization(
             model.module.load_state_dict(ckpt['state_dict'])
 
     model.eval()
+    if dropout_eval:
+        set_dropout_modules_active(model)
     if dataset == 'cifar':
         normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         augment_list = [
@@ -148,7 +157,7 @@ def analyze_equilibrium_initialization(
 
     aug_train_loader = torch.utils.data.DataLoader(
         Subset(aug_train_dataset, list(range(n_samples_train))),
-        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus),
+        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU*len(gpus) if not on_cpu else config.TRAIN.BATCH_SIZE_PER_GPU,
         shuffle=True,
         num_workers=config.WORKERS,
         pin_memory=True
@@ -177,6 +186,8 @@ def analyze_equilibrium_initialization(
         None,
     )
     model.eval()
+    if dropout_eval:
+        set_dropout_modules_active(model)
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
@@ -216,6 +227,8 @@ def analyze_equilibrium_initialization(
     results_name = f'eq_init_results_{dataset}_{model_size}_{n_samples_train}'
     if checkpoint:
         results_name += f'_ckpt{checkpoint}'
+    if dropout_eval:
+        results_name += '_dropout'
     df_results.to_csv(
         f'{results_name}.csv',
     )
