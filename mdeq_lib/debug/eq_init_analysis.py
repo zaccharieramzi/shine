@@ -184,6 +184,7 @@ def analyze_equilibrium_initialization(
         None,
         None,
         None,
+        global_steps=config.TRAIN.PRETRAIN_STEPS+1,
     )
     model.eval()
     if dropout_eval:

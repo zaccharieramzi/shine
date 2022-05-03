@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def train(
     config, train_loader, model, criterion, optimizer, lr_scheduler, epoch,
     output_dir, tb_log_dir, writer_dict, topk=(1,5), opa=False,
-    indexed_dataset=False,
+    indexed_dataset=False, global_steps=None,
 ):
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -29,7 +29,8 @@ def train(
     top1 = AverageMeter()
     top5 = AverageMeter()
     update_freq = config.LOSS.JAC_INCREMENTAL
-    global_steps = writer_dict['train_global_steps'] if writer_dict is not None else 0
+    if global_steps is None:
+        global_steps = writer_dict['train_global_steps'] if writer_dict is not None else 0
 
 
     # switch to train mode
