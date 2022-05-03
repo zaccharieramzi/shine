@@ -388,6 +388,9 @@ class MDEQNet(nn.Module):
             nn.ReLU(inplace=True)
         )
 
+        # TODO: this changes in new version
+        # https://github.com/locuslab/deq/blob/master/MDEQ-Vision/lib/models/mdeq_core.py#L330
+
         # PART I: Input injection module
         if self.downsample_times == 0 and self.num_branches <= 2:
             # We use the downsample module above as the injection transformation
