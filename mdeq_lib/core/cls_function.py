@@ -131,6 +131,7 @@ def train(
                   'Speed {speed:.1f} samples/s\t' \
                   'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
                   'Loss {loss.val:.5f} ({loss.avg:.5f})\t' \
+                  'Jac Loss {jac_losses.avg:.5f}\t' \
                   'Accuracy@1 {top1.val:.3f} ({top1.avg:.3f})\t' \
                   'Accuracy@5 {top5.val:.3f} ({top5.avg:.3f})\t'.format(
                       epoch, i, effec_batch_num, batch_time=batch_time,
