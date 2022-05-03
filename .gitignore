@@ -18,3 +18,9 @@ PRIVATE_*
 # Do not add images in the repo
 *.pdf
 *.png
+
+# Do not add results to repo
+log*/
+imagenet/
+cifar10/
+*.csv
