@@ -21,6 +21,7 @@ PRIVATE_*
 
 # Do not add results to repo
 log*/
-imagenet/
+imagenet/**.log
+imagenet/cls_mdeq_*/**.pth.tar
 cifar10/
 *.csv
