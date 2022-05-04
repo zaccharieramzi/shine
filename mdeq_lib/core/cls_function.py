@@ -131,12 +131,12 @@ def train(
                   'Speed {speed:.1f} samples/s\t' \
                   'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
                   'Loss {loss.val:.5f} ({loss.avg:.5f})\t' \
-                  'Jac Loss {jac_losses.avg:.5f}\t' \
+                  'Jac Loss {jac_loss.val:.5f} ({jac_loss.avg:.5f})\t' \
                   'Accuracy@1 {top1.val:.3f} ({top1.avg:.3f})\t' \
                   'Accuracy@5 {top5.val:.3f} ({top5.avg:.3f})\t'.format(
                       epoch, i, effec_batch_num, batch_time=batch_time,
                       speed=input.size(0)/batch_time.val,
-                      data_time=data_time, loss=losses, top1=top1, top5=top5)
+                      data_time=data_time, loss=losses, jac_loss=jac_losses, top1=top1, top5=top5)
             logger.info(msg)
 
             if writer_dict:
