@@ -16,6 +16,7 @@ MODEL:
   WNORM: true
   DOWNSAMPLE_TIMES: 0
   EXPANSION_FACTOR: 5
+  POST_GN_AFFINE: false
   IMAGE_SIZE:
     - 32
     - 32
