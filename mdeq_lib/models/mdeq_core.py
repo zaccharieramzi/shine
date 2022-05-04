@@ -22,6 +22,9 @@ from mdeq_lib.modules.jacobian import jac_loss_estimate
 from mdeq_lib.models.mdeq_forward_backward import MDEQWrapper
 
 BN_MOMENTUM = 0.1
+BLOCK_GN_AFFINE = True    # Don't change the value here. The value is controlled by the yaml files.
+FUSE_GN_AFFINE = True     # Don't change the value here. The value is controlled by the yaml files.
+POST_GN_AFFINE = True     # Don't change the value here. The value is controlled by the yaml files.
 DEQ_EXPAND = 5        # Don't change the value here. The value is controlled by the yaml files.
 NUM_GROUPS = 4        # Don't change the value here. The value is controlled by the yaml files.
 logger = logging.getLogger(__name__)
@@ -48,16 +51,16 @@ class BasicBlock(nn.Module):
         """
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, DEQ_EXPAND*planes, stride)
-        self.gn1 = nn.GroupNorm(NUM_GROUPS, DEQ_EXPAND*planes, affine=True)
+        self.gn1 = nn.GroupNorm(NUM_GROUPS, DEQ_EXPAND*planes, affine=BLOCK_GN_AFFINE)
         self.relu = nn.ReLU(inplace=True)
 
         self.conv2 = conv3x3(DEQ_EXPAND*planes, planes)
-        self.gn2 = nn.GroupNorm(NUM_GROUPS, planes, affine=True)
+        self.gn2 = nn.GroupNorm(NUM_GROUPS, planes, affine=BLOCK_GN_AFFINE)
 
         self.downsample = downsample
         self.stride = stride
 
-        self.gn3 = nn.GroupNorm(NUM_GROUPS, planes, affine=True)
+        self.gn3 = nn.GroupNorm(NUM_GROUPS, planes, affine=BLOCK_GN_AFFINE)
         self.relu3 = nn.ReLU(inplace=True)
         self.drop = VariationalHidDropout2d(dropout)
         if wnorm: self._wnorm()
@@ -145,7 +148,7 @@ class DownsampleModule(nn.Module):
         for k in range(level_diff):
             intermediate_out = out_chan if k == (level_diff-1) else inp_chan
             components = [('conv', nn.Conv2d(inp_chan, intermediate_out, **kwargs)),
-                          ('gnorm', nn.GroupNorm(NUM_GROUPS, intermediate_out, affine=True))]
+                          ('gnorm', nn.GroupNorm(NUM_GROUPS, intermediate_out, affine=FUSE_GN_AFFINE))]
             if k != (level_diff-1):
                 components.append(('relu', nn.ReLU(inplace=True)))
             conv3x3s.append(nn.Sequential(OrderedDict(components)))
@@ -178,7 +181,7 @@ class UpsampleModule(nn.Module):
 
         self.net = nn.Sequential(OrderedDict([
                         ('conv', nn.Conv2d(inp_chan, out_chan, kernel_size=1, bias=False)),
-                        ('gnorm', nn.GroupNorm(NUM_GROUPS, out_chan, affine=True)),
+                        ('gnorm', nn.GroupNorm(NUM_GROUPS, out_chan, affine=FUSE_GN_AFFINE)),
                         ('upsample', nn.Upsample(scale_factor=2**level_diff, mode='nearest'))
                    ]))
 
@@ -213,7 +216,7 @@ class MDEQModule(nn.Module):
             nn.Sequential(OrderedDict([
                 ('relu', nn.ReLU(False)),
                 ('conv', nn.Conv2d(num_channels[i], num_channels[i], kernel_size=1, bias=False)),
-                ('gnorm', nn.GroupNorm(NUM_GROUPS // 2, num_channels[i], affine=True))
+                ('gnorm', nn.GroupNorm(NUM_GROUPS // 2, num_channels[i], affine=POST_GN_AFFINE))
             ])) for i in range(num_branches)])   # shaojie
         self.relu = nn.ReLU(False)
 
@@ -426,7 +429,7 @@ class MDEQNet(nn.Module):
         self.iodrop = VariationalHidDropout2d(0.0)
 
     def parse_cfg(self, cfg):
-        global DEQ_EXPAND, NUM_GROUPS
+        global DEQ_EXPAND, NUM_GROUPS, BLOCK_GN_AFFINE, FUSE_GN_AFFINE, POST_GN_AFFINE
         self.num_branches = cfg['MODEL']['EXTRA']['FULL_STAGE']['NUM_BRANCHES']
         self.num_channels = cfg['MODEL']['EXTRA']['FULL_STAGE']['NUM_CHANNELS']
         self.init_chansize = self.num_channels[0]
@@ -443,8 +446,13 @@ class MDEQNet(nn.Module):
         self.downsample_times = cfg['MODEL']['DOWNSAMPLE_TIMES']
         self.pretrain_steps = cfg['TRAIN']['PRETRAIN_STEPS']
         self.group_norm = cfg['MODEL']['EXTRA']['FULL_STAGE']['GROUP_NORM']
+
+        # Update global variables
         DEQ_EXPAND = cfg['MODEL']['EXPANSION_FACTOR']
         NUM_GROUPS = cfg['MODEL']['NUM_GROUPS']
+        BLOCK_GN_AFFINE = cfg['MODEL']['BLOCK_GN_AFFINE']
+        FUSE_GN_AFFINE = cfg['MODEL']['FUSE_GN_AFFINE']
+        POST_GN_AFFINE = cfg['MODEL']['POST_GN_AFFINE']
 
     def _make_stage(self, layer_config, num_channels, dropout=0.0):
         """
