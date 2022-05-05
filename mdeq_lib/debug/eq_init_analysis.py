@@ -132,6 +132,8 @@ def analyze_equilibrium_initialization(
     aug_inits = {}
     fn = model if on_cpu else model.module
     debug_info_tag = f'{dataset}_{model_size}_{checkpoint}_{n_samples_train}'
+    if dropout_eval:
+        debug_info_tag += '_dropout'
     for image_index in image_indices:
         image, _ = train_dataset[image_index]
         image = image.unsqueeze(0)
